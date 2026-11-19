@@ -1,0 +1,161 @@
+@model CustomerDashboardViewModel
+@{
+    ViewData["Title"] = "My dashboard";
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4">
+        <i class="bi bi-check-circle-fill"></i>
+        <div>@success</div>
+    </div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+<!-- ------------------------------------------------------------------ KPI -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-router"></i></span>
+            <div class="kpi-label">Active connections</div>
+            <div class="kpi-value">@Model.ActiveConnections</div>
+            <div class="kpi-delta">@Model.Connections.Count total</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-hourglass-split"></i></span>
+            <div class="kpi-label">Open orders</div>
+            <div class="kpi-value">@Model.PendingOrders</div>
+            <div class="kpi-delta">@Model.Orders.Count in total</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+            <div class="kpi-label">Amount due</div>
+            <div class="kpi-value">@Model.TotalDue.ToString("N0")</div>
+            <div class="kpi-delta">Rupees on the open invoices</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-cash-stack"></i></span>
+            <div class="kpi-label">Paid so far</div>
+            <div class="kpi-value">@Model.TotalPaid.ToString("N0")</div>
+            <div class="kpi-delta">@Model.Payments.Count receipt(s)</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- ------------------------------------------------------------- recent orders -->
+    <div class="col-xl-7">
+        <div class="glass p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">My recent orders</h2>
+                <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Orders" asp-action="Index">All orders</a>
+            </div>
+
+            @if (Model.Orders.Count == 0)
+            {
+                <div class="empty-state">
+                    <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+                        <rect x="45" y="30" width="110" height="100" rx="10" stroke="#d4af37" stroke-width="2" opacity=".5" />
+                        <path d="M65 60h70M65 80h70M65 100h40" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+                    </svg>
+                    <div class="title">No order yet</div>
+                    <p class="text">Browse the catalogue and place your first order - you only pay the installer in cash.</p>
+                    <a class="btn btn-gold" asp-area="Customer" asp-controller="Browse" asp-action="Index">Browse the plans</a>
+                </div>
+            }
+            else
+            {
+                <div class="table-wrap table-wrap-lg">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Plan</th>
+                                <th>Status</th>
+                                <th class="num">Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model.Orders.Take(8))
+                            {
+                                <tr>
+                                    <td><span class="order-id-chip">@order.OrderId</span></td>
+                                    <td class="fs-14">@order.Plan?.Name</td>
+                                    <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(order.Status))</td>
+                                    <td class="num text-silver">@order.TotalAmount.ToString("N2")</td>
+                                    <td class="text-end">
+                                        <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Orders" asp-action="Details" asp-route-id="@order.OrderId">Open</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------- connections -->
+    <div class="col-xl-5">
+        <div class="glass p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">My connections</h2>
+                <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Connections" asp-action="Index">All</a>
+            </div>
+
+            @if (Model.Connections.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">A connection appears here as soon as the partner has activated the service.</p>
+            }
+            else
+            {
+                <div class="d-grid gap-3">
+                    @foreach (var connection in Model.Connections.Take(5))
+                    {
+                        <a class="doc-tile text-decoration-none" asp-area="Customer" asp-controller="Connections" asp-action="Details" asp-route-accountId="@connection.AccountId">
+                            <span class="icon"><i class="bi bi-router"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600">@connection.Plan?.Name</div>
+                                <small class="text-muted-silver"><span class="account-id-chip">@connection.AccountId</span></small>
+                            </div>
+                            @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(connection.Status))
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- ------------------------------------------------------------- deposits -->
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">Security deposit</h2>
+
+            @if (Model.Deposits.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No deposit has been recorded for your account yet.</p>
+            }
+            else
+            {
+                @foreach (var deposit in Model.Deposits)
+                {
+                    <div class="stat-line">
+                        <span class="k">@deposit.HeldOn.ToString("dd MMM yyyy")</span>
+                        <span class="v">@deposit.NetAmount.ToString("N2") Rs</span>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

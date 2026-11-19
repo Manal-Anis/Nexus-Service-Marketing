@@ -1,0 +1,81 @@
+@model List<Connection>
+@{
+    ViewData["Title"] = "Connections";
+    var currentStatus = ViewData["CurrentStatus"] as string;
+    var currentSearch = ViewData["CurrentSearch"] as string;
+}
+
+<div class="glass p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <span class="kpi-label me-2">Filter</span>
+        <a class="btn btn-sm @(string.IsNullOrEmpty(currentStatus) ? "btn-gold" : "btn-ghost")"
+           asp-area="Vendor" asp-controller="Connections" asp-action="Index">All</a>
+        @foreach (var status in Enum.GetValues<ConnectionStatus>())
+        {
+            <a class="btn btn-sm @(currentStatus == status.ToString() ? "btn-gold" : "btn-ghost")"
+               asp-area="Vendor" asp-controller="Connections" asp-action="Index" asp-route-status="@status">@status.ToDisplayName()</a>
+        }
+    </div>
+
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <input type="hidden" name="status" value="@currentStatus" />
+        <input class="form-control" style="max-width:320px" type="search" name="search" value="@currentSearch"
+               placeholder="Account id, customer name or address" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+        @if (!string.IsNullOrWhiteSpace(currentSearch))
+        {
+            <a class="btn btn-ghost" asp-area="Vendor" asp-controller="Connections" asp-action="Index" asp-route-status="@currentStatus">Clear</a>
+        }
+    </form>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <rect x="60" y="45" width="80" height="45" rx="8" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M100 90v25M75 120h50" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No connection in this view</div>
+        <p class="text">A connection appears here as soon as a feasible order is activated.</p>
+        <a class="btn btn-gold" asp-area="Vendor" asp-controller="Connections" asp-action="Create">Create a connection</a>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Account id</th>
+                    <th>Customer</th>
+                    <th>Plan</th>
+                    <th>City</th>
+                    <th>Activated</th>
+                    <th>Status</th>
+                    <th class="num">Monthly</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var connection in Model)
+                {
+                    <tr>
+                        <td><span class="account-id-chip">@connection.AccountId</span></td>
+                        <td class="fs-14">@connection.Customer?.FullName</td>
+                        <td class="fs-14 text-muted-silver">@connection.Plan?.Name</td>
+                        <td class="fs-14 text-muted-silver">@connection.City?.Name</td>
+                        <td class="fs-14">@connection.ActivationDate.ToString("dd MMM yyyy")</td>
+                        <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(connection.Status))</td>
+                        <td class="num text-silver">@connection.MonthlyCharge.ToString("N2")</td>
+                        <td class="text-end">
+                            <a class="btn btn-ghost btn-sm" asp-area="Vendor" asp-controller="Connections" asp-action="Details" asp-route-id="@connection.Id">
+                                Open
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

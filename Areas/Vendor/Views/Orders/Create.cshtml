@@ -1,0 +1,210 @@
+@model VendorOrderFormViewModel
+@{
+    ViewData["Title"] = "Walk-in order";
+    var plan = Model.Plans.FirstOrDefault(p => p.Id == Model.PlanId);
+    var depositUnit = plan?.Category?.SecurityDeposit ?? 0m;
+    var tiersJson = Json.Serialize(Model.DiscountRules.Select(r => new
+    {
+        min = r.MinConnections,
+        max = r.MaxConnections,
+        pct = r.DiscountPercent
+    }).ToList());
+}
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+<form method="post" asp-area="Vendor" asp-controller="Orders" asp-action="Create" id="walkInForm">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="row g-4"
+         data-wizard-root
+         data-wizard-deposit="@depositUnit"
+         data-wizard-price="@((plan?.Price) ?? 0m)"
+         data-wizard-tax="@Model.TaxPercent"
+         data-wizard-tiers="@tiersJson">
+        <div class="col-xl-8">
+            <!-- ---------------------------------------------------------- customer -->
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The customer</h2>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="CustomerId">Existing customer</label>
+                        <select asp-for="CustomerId" class="form-select" id="customerSelect">
+                            <option value="0">- new walk-in customer -</option>
+                            @foreach (var customer in Model.Customers)
+                            {
+                                <option value="@customer.Id" data-name="@customer.FullName" data-phone="@customer.Phone" data-email="@customer.Email" data-city="@customer.CityId" data-address="@customer.Address">
+                                    @customer.FullName - @customer.Phone
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="CustomerName">Customer name</label>
+                        <input asp-for="CustomerName" class="form-control" placeholder="Walk-in customer" />
+                        <span asp-validation-for="CustomerName" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="ContactNumber">Contact number</label>
+                        <input asp-for="ContactNumber" class="form-control" placeholder="0321-1234567" />
+                        <span asp-validation-for="ContactNumber" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Email">Email address</label>
+                        <input asp-for="Email" class="form-control" placeholder="optional" />
+                        <span asp-validation-for="Email" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="CityId">City</label>
+                        <select asp-for="CityId" class="form-select">
+                            <option value="">Choose a city</option>
+                            @foreach (var city in Model.Cities)
+                            {
+                                <option value="@city.Id">@city.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="RetailShopId">Retail shop</label>
+                        <select asp-for="RetailShopId" class="form-select">
+                            <option value="">No shop selected</option>
+                            @foreach (var shop in Model.Shops)
+                            {
+                                <option value="@shop.Id">@shop.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="InstallationAddress">Installation address</label>
+                        <input asp-for="InstallationAddress" class="form-control" />
+                        <span asp-validation-for="InstallationAddress" class="text-danger fs-14"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ---------------------------------------------------------- service -->
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The service</h2>
+
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label" asp-for="PlanId">Plan</label>
+                        <select asp-for="PlanId" class="form-select" id="planSelect">
+                            <option value="0">Choose a plan</option>
+                            @foreach (var item in Model.Plans)
+                            {
+                                <option value="@item.Id" data-price="@item.Price" data-deposit="@item.Category.SecurityDeposit">
+                                    @item.Category.Name - @item.Name - @item.Price.ToString("N0") Rs
+                                </option>
+                            }
+                        </select>
+                        <span asp-validation-for="PlanId" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="Quantity">Number of connections</label>
+                        <input asp-for="Quantity" class="form-control" type="number" min="1" max="1000"
+                               data-wizard="quantity-input" />
+                        <span asp-validation-for="Quantity" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="EquipmentProductId">Equipment with the connection</label>
+                        <select asp-for="EquipmentProductId" class="form-select" data-wizard="equipment-input">
+                            <option value="0" data-price="0">No equipment</option>
+                            @foreach (var product in Model.Equipment)
+                            {
+                                <option value="@product.Id" data-price="@product.Price">@product.Name - @product.Price.ToString("N0") Rs</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="ExistingLandlineAccountId">Existing Nexus landline account id</label>
+                        <input asp-for="ExistingLandlineAccountId" class="form-control" placeholder="T001000000000001" />
+                        <span asp-validation-for="ExistingLandlineAccountId" class="text-danger fs-14"></span>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" asp-for="RequiresLandline" type="checkbox" />
+                            <label class="form-check-label text-muted-silver fs-14" asp-for="RequiresLandline">I need a new landline line</label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="Notes">Notes</label>
+                        <input asp-for="Notes" class="form-control" placeholder="Counter note for the technical team" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ------------------------------------------------------------ summary -->
+        <div class="col-xl-4">
+            <div class="glass p-4 position-sticky" style="top:96px;">
+                <h2 class="h5 mb-3">Order summary</h2>
+
+                <div class="stat-line"><span class="k">Connections</span><span class="v"><span data-wizard="quantity">1</span></span></div>
+                <div class="stat-line"><span class="k">Deposit (gross)</span><span class="v"><span data-wizard="gross-deposit">0.00</span></span></div>
+                <div class="stat-line"><span class="k">Advance (gross)</span><span class="v"><span data-wizard="gross-advance">0.00</span></span></div>
+                <div class="stat-line"><span class="k">Bulk discount</span><span class="v text-gold"><span data-wizard="discount">0</span>%</span></div>
+                <div class="stat-line"><span class="k">Deposit payable</span><span class="v"><span data-wizard="deposit">0.00</span></span></div>
+                <div class="stat-line"><span class="k">Advance payable</span><span class="v"><span data-wizard="advance">0.00</span></span></div>
+                <div class="stat-line"><span class="k">Equipment</span><span class="v"><span data-wizard="equipment">0.00</span></span></div>
+                <div class="stat-line"><span class="k">Tax</span><span class="v"><span data-wizard="tax">0.00</span></span></div>
+                <div class="stat-line stat-total"><span class="k">Total payable</span><span class="v text-gold fs-5"><span data-wizard="total">0.00</span> Rs</span></div>
+
+                <div class="alert-nexus alert-info mt-4">
+                    <i class="bi bi-cash-coin"></i>
+                    <div class="fs-14">
+                        The customer pays the installer in cash. Nothing is charged online.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-gold w-100 mt-3">
+                    <i class="bi bi-check2-circle me-1"></i>Register the order
+                </button>
+                <a class="btn btn-ghost w-100 mt-2" asp-area="Vendor" asp-controller="Orders" asp-action="Index">Cancel</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var customerSelect = document.getElementById('customerSelect');
+            var planSelect = document.getElementById('planSelect');
+            var root = document.getElementById('walkInForm');
+
+            function setValue(selector, value) {
+                var field = root.querySelector(selector);
+                if (field) field.value = value == null ? '' : value;
+            }
+
+            if (customerSelect) {
+                customerSelect.addEventListener('change', function () {
+                    var option = customerSelect.selectedOptions[0];
+                    if (!option || option.value === '0') return;
+                    setValue('#CustomerName', option.dataset.name);
+                    setValue('#ContactNumber', option.dataset.phone);
+                    setValue('#Email', option.dataset.email);
+                    setValue('#InstallationAddress', option.dataset.address);
+                    if (option.dataset.city) setValue('#CityId', option.dataset.city);
+                });
+            }
+
+            if (planSelect) {
+                planSelect.addEventListener('change', function () {
+                    var option = planSelect.selectedOptions[0];
+                    if (!option) return;
+                    root.dataset.wizardPrice = option.dataset.price || '0';
+                    root.dataset.wizardDeposit = option.dataset.deposit || '0';
+                    var quantity = root.querySelector('[data-wizard="quantity-input"]');
+                    if (quantity) quantity.dispatchEvent(new Event('input'));
+                });
+            }
+        });
+    </script>
+}

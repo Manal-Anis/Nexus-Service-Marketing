@@ -1,0 +1,106 @@
+@model Plan
+@{
+    ViewData["Title"] = Model.Name;
+    var features = (Model.Features ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+}
+
+<section class="container py-5">
+    <nav aria-label="breadcrumb" class="mb-4" data-reveal>
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Plans">Plans</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+        </ol>
+    </nav>
+
+    <div class="row g-5">
+        <div class="col-lg-7" data-reveal>
+            <span class="eyebrow">@Model.Category.Name</span>
+            <h1 class="section-title mt-2">@Model.Name</h1>
+            <p class="section-lead mt-3">@Model.Description</p>
+
+            <div class="row g-3 mt-2">
+                <div class="col-sm-6">
+                    <div class="glass p-3 h-100">
+                        <div class="kpi-label">Price</div>
+                        <div class="plan-price"><span class="currency">Rs</span> @Model.Price.ToString("N0")</div>
+                        <small class="text-muted-silver">@Model.BillingPeriod.ToDisplayName() billing</small>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="glass p-3 h-100">
+                        <div class="kpi-label">Security deposit</div>
+                        <div class="plan-price"><span class="currency">Rs</span> @Model.Category.SecurityDeposit.ToString("N0")</div>
+                        <small class="text-muted-silver">One time, on the activation invoice</small>
+                    </div>
+                </div>
+            </div>
+
+            @if (features.Length > 0)
+            {
+                <h2 class="h5 mt-5 mb-3">What is included</h2>
+                <div class="glass p-4">
+                    <ul class="list-unstyled d-grid gap-3 mb-0">
+                        @foreach (var feature in features)
+                        {
+                            <li class="d-flex gap-3">
+                                <i class="bi bi-check-circle-fill text-gold"></i>
+                                <span class="text-silver">@feature</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <h2 class="h5 mt-5 mb-3">How the billing works</h2>
+            <div class="glass p-4">
+                <div class="stat-line"><span class="k">Activation invoice</span><span class="v">Discounted deposit + discounted advance + equipment + tax</span></div>
+                <div class="stat-line"><span class="k">Periodic bill</span><span class="v">Plan rental + call charges + replacement + previous dues - discount + tax</span></div>
+                <div class="stat-line"><span class="k">Payment</span><span class="v">Cash on delivery, collected at the counter</span></div>
+                <div class="stat-line"><span class="k">Overdue</span><span class="v">After 30 days the connection is flagged temporarily inactive</span></div>
+            </div>
+        </div>
+
+        <div class="col-lg-5" data-reveal="120">
+            <div class="glass p-4 position-sticky" style="top:96px;">
+                <div class="category-icon"><i class="bi @Model.Icon"></i></div>
+                <h2 class="h5">Order this plan</h2>
+                <p class="text-muted-silver fs-14">Create a free account, place the order and pay the installer in cash when the connection is handed over.</p>
+
+                <dl class="stat-line-list mb-4">
+                    @if (Model.Hours.HasValue)
+                    {
+                        <div class="stat-line"><span class="k">Hours</span><span class="v">@Model.Hours</span></div>
+                    }
+                    @if (Model.SpeedKbps.HasValue)
+                    {
+                        <div class="stat-line"><span class="k">Speed</span><span class="v">@Model.SpeedKbps Kbps</span></div>
+                    }
+                    @if (Model.ValidityDays.HasValue)
+                    {
+                        <div class="stat-line"><span class="k">Validity</span><span class="v">@Model.ValidityDays days</span></div>
+                    }
+                    @if (Model.LocalRate.HasValue)
+                    {
+                        <div class="stat-line"><span class="k">Local rate</span><span class="v">@Model.LocalRate.Value.ToString("0.00") Rs/min</span></div>
+                    }
+                    @if (Model.StdRate.HasValue)
+                    {
+                        <div class="stat-line"><span class="k">STD rate</span><span class="v">@Model.StdRate.Value.ToString("0.00") Rs/min</span></div>
+                    }
+                    @if (Model.MobileMsgRate.HasValue)
+                    {
+                        <div class="stat-line"><span class="k">Mobile message</span><span class="v">@Model.MobileMsgRate.Value.ToString("0.00") Rs/min</span></div>
+                    }
+                </dl>
+
+                <a class="btn btn-gold w-100 mb-2" asp-area="Customer" asp-controller="Browse" asp-action="Index">
+                    <i class="bi bi-bag-plus me-2"></i>Order this plan
+                </a>
+                <a class="btn btn-ghost w-100" asp-controller="Home" asp-action="CheckConnection">
+                    <i class="bi bi-router me-2"></i>Check availability
+                </a>
+            </div>
+        </div>
+    </div>
+</section>

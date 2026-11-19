@@ -1,0 +1,142 @@
+@model List<Plan>
+@{
+    ViewData["Title"] = "Plans";
+    var categories = ViewData["Categories"] as List<ServiceCategory> ?? new List<ServiceCategory>();
+    var currentCategory = ViewData["CurrentCategory"] as string;
+    var currentApproval = ViewData["CurrentApproval"] as string;
+    var currentSearch = ViewData["CurrentSearch"] as string;
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4"><i class="bi bi-check-circle-fill"></i><div>@success</div></div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4"><i class="bi bi-x-circle-fill"></i><div>@error</div></div>
+}
+
+<div class="glass p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <span class="kpi-label me-2">Service</span>
+        <a class="btn btn-sm @(string.IsNullOrEmpty(currentCategory) ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Plans" asp-action="Index">All</a>
+        @foreach (var category in categories)
+        {
+            <a class="btn btn-sm @(currentCategory == category.Code ? "btn-gold" : "btn-ghost")"
+               asp-area="Admin" asp-controller="Plans" asp-action="Index" asp-route-category="@category.Code">@category.Name</a>
+        }
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <span class="kpi-label me-2">Approval</span>
+        <a class="btn btn-sm @(string.IsNullOrEmpty(currentApproval) ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Plans" asp-action="Index" asp-route-category="@currentCategory">All</a>
+        @foreach (var status in Enum.GetValues<PlanApprovalStatus>())
+        {
+            <a class="btn btn-sm @(currentApproval == status.ToString() ? "btn-gold" : "btn-ghost")"
+               asp-area="Admin" asp-controller="Plans" asp-action="Index" asp-route-category="@currentCategory" asp-route-approval="@status">@status.ToDisplayName()</a>
+        }
+    </div>
+
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <input type="hidden" name="category" value="@currentCategory" />
+        <input type="hidden" name="approval" value="@currentApproval" />
+        <input class="form-control" style="max-width:320px" type="search" name="search" value="@currentSearch"
+               placeholder="Name of the plan" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+        <a class="btn btn-gold ms-auto" asp-area="Admin" asp-controller="Plans" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i>Add a plan
+        </a>
+    </form>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <rect x="50" y="35" width="100" height="90" rx="10" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M70 65h60M70 85h60M70 105h35" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No plan in this view</div>
+        <p class="text">No plan of the catalogue matches the current filter.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Plan</th>
+                    <th>Service</th>
+                    <th>Shape</th>
+                    <th>Validity</th>
+                    <th class="num">Price</th>
+                    <th class="num">Local</th>
+                    <th class="num">STD</th>
+                    <th>Approval</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var plan in Model)
+                {
+                    <tr>
+                        <td class="text-silver fw-600">
+                            @plan.Name
+                            @if (plan.Vendor != null)
+                            {
+                                <div class="fs-14 text-muted-silver">by @plan.Vendor.BusinessName</div>
+                            }
+                        </td>
+                        <td class="fs-14">@(plan.Category?.Name ?? "-")</td>
+                        <td class="fs-14 text-muted-silver">@plan.Kind.ToDisplayName()</td>
+                        <td class="fs-14 text-muted-silver">
+                            @plan.BillingPeriod.ToDisplayName()
+                            @if (plan.Hours.HasValue)
+                            {
+                                <div>@plan.Hours hour(s)</div>
+                            }
+                            @if (plan.SpeedKbps.HasValue)
+                            {
+                                <div>@plan.SpeedKbps Kbps</div>
+                            }
+                        </td>
+                        <td class="num text-silver">@plan.Price.ToString("N2")</td>
+                        <td class="num text-muted-silver">@(plan.LocalRate?.ToString("N2") ?? "-")</td>
+                        <td class="num text-muted-silver">@(plan.StdRate?.ToString("N2") ?? "-")</td>
+                        <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(plan.ApprovalStatus))</td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <a class="btn btn-ghost btn-sm" asp-area="Admin" asp-controller="Plans" asp-action="Edit" asp-route-id="@plan.Id">Edit</a>
+                                @if (plan.ApprovalStatus != PlanApprovalStatus.Approved)
+                                {
+                                    <form method="post" asp-area="Admin" asp-controller="Plans" asp-action="Approve" asp-route-id="@plan.Id">
+                                        <button class="btn btn-outline-gold btn-sm" type="submit" title="Approve the plan">
+                                            <i class="bi bi-check2"></i>
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-area="Admin" asp-controller="Plans" asp-action="Reject" asp-route-id="@plan.Id">
+                                        <input type="hidden" name="reason" value="The plan does not match the catalogue of Nexus." />
+                                        <button class="btn btn-ghost btn-sm" type="submit" title="Reject the plan">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-area="Admin" asp-controller="Plans" asp-action="ToggleActive" asp-route-id="@plan.Id">
+                                        <button class="btn btn-ghost btn-sm" type="submit" title="Switch the plan on or off">
+                                            <i class="bi bi-toggle-@(plan.IsActive ? "on" : "off")"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,75 @@
+@* Demo logins for everybody who runs the project for the first time.
+   Switch it off with  "Demo": { "ShowCredentials": false }  in appsettings.json.
+   Model "admin" shows the administrator only, anything else shows all roles. *@
+@using Microsoft.Extensions.Configuration
+@model string
+@inject IConfiguration Config
+@if (Config.GetValue("Demo:ShowCredentials", true))
+{
+    var adminOnly = string.Equals(Model, "admin", StringComparison.OrdinalIgnoreCase);
+    var rows = new List<(string Role, string Icon, string Email, string Password, string Note)>
+    {
+        ("Administrator", "bi-shield-lock", "admin@nexus.com", "Admin@123", "Full control of the network")
+    };
+
+    if (!adminOnly)
+    {
+        rows.Add(("Partner (vendor owner)", "bi-shop", "vendor1@nexus.com", "Vendor@123", "Nexus Connect Retail"));
+        rows.Add(("Technical staff", "bi-tools", "technical1@nexus.com", "Staff@123", "Feasibility and connections"));
+        rows.Add(("Accounts staff", "bi-receipt", "accounts1@nexus.com", "Staff@123", "Bills and payments"));
+        rows.Add(("Retail staff", "bi-bag", "retail1@nexus.com", "Staff@123", "Walk-in orders"));
+        rows.Add(("Customer", "bi-person", "customer1@nexus.com", "Customer@123", "Orders, bills, connections"));
+    }
+
+    <div class="demo-access glass p-3 p-lg-4 mx-auto mt-4" data-reveal>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="bi bi-key-fill text-gold"></i>
+            <h2 class="h6 mb-0">Demo access</h2>
+        </div>
+        <p class="text-muted-silver fs-14 mb-3">
+            This is a demonstration build. Use one of these accounts to look around, or click <strong>Fill in</strong>.
+        </p>
+
+        <div class="d-grid gap-2">
+            @foreach (var row in rows)
+            {
+                <div class="demo-row d-flex flex-wrap align-items-center gap-2 justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @row.Icon text-gold"></i>
+                        <div>
+                            <div class="text-silver fw-600 fs-14">@row.Role</div>
+                            <div class="text-muted-silver fs-14">@row.Email &middot; <span class="text-gold-light">@row.Password</span></div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm demo-fill" data-email="@row.Email" data-password="@row.Password">Fill in</button>
+                </div>
+            }
+        </div>
+
+        @if (adminOnly)
+        {
+            <p class="text-muted-silver fs-14 mt-3 mb-0">
+                Customers and partners sign in on the <a asp-area="" asp-controller="Account" asp-action="Login">normal sign in page</a>.
+            </p>
+        }
+        else
+        {
+            <p class="text-muted-silver fs-14 mt-3 mb-0">
+                The administrator also has a separate page:
+                <a asp-area="" asp-controller="Account" asp-action="AdminLogin"><i class="bi bi-shield-lock me-1"></i>Admin portal</a>.
+            </p>
+        }
+    </div>
+
+    <script>
+        document.querySelectorAll('.demo-fill').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var email = document.getElementById('Email');
+                var password = document.getElementById('Password');
+                if (email) { email.value = button.dataset.email; }
+                if (password) { password.value = button.dataset.password; }
+                if (email) { email.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            });
+        });
+    </script>
+}

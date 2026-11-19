@@ -1,0 +1,89 @@
+@model CheckConnectionViewModel
+@{
+    ViewData["Title"] = "Check your connection";
+}
+
+<section class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="text-center mb-4" data-reveal>
+                <span class="eyebrow">Account lookup</span>
+                <h1 class="section-title mt-2">Check your connection</h1>
+                <p class="section-lead mx-auto mt-2">
+                    Enter the account id that was issued when your connection was activated. It starts with the
+                    service letter, then the three digit city code and twelve digits, for example
+                    <span class="account-id-chip">B001000000000001</span>.
+                </p>
+            </div>
+
+            <form method="post" asp-controller="Home" asp-action="CheckConnection" class="glass p-4 mb-4" data-reveal>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-9">
+                        <label class="form-label" asp-for="AccountId">Account ID</label>
+                        <input asp-for="AccountId" class="form-control" placeholder="B001000000000001" autocomplete="off" />
+                        <span asp-validation-for="AccountId" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-gold w-100"><i class="bi bi-search me-1"></i>Check</button>
+                    </div>
+                </div>
+            </form>
+
+            @if (Model.Searched && Model.Connection is null)
+            {
+                <div class="alert-nexus alert-warning" data-reveal>
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div>
+                        <strong>No connection found.</strong>
+                        <div class="fs-14">Please re-check the account id. It is printed on every invoice of the connection.</div>
+                    </div>
+                </div>
+            }
+            else if (Model.Connection is not null)
+            {
+                <div class="glass p-4" data-reveal>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                        <div>
+                            <div class="kpi-label">Account</div>
+                            <span class="account-id-chip fs-6">@Model.Connection.AccountId</span>
+                        </div>
+                        <div>
+                            <div class="kpi-label">Customer</div>
+                            <div class="text-silver">@Model.Connection.Customer?.FullName</div>
+                        </div>
+                        <div>
+                            <div class="kpi-label">City</div>
+                            <div class="text-silver">@Model.Connection.City?.Name</div>
+                        </div>
+                        <div>
+                            <div class="kpi-label">Status</div>
+                            @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(Model.Connection.Status))
+                        </div>
+                    </div>
+
+                    <hr class="divider-gold my-4" />
+
+                    <div class="stat-line"><span class="k">Plan</span><span class="v">@Model.Connection.Plan?.Name</span></div>
+                    <div class="stat-line"><span class="k">Service type</span><span class="v">@Model.Connection.Plan?.Category?.Name</span></div>
+                    <div class="stat-line"><span class="k">Activated on</span><span class="v">@Model.Connection.ActivationDate.ToString("dd MMM yyyy")</span></div>
+                    <div class="stat-line"><span class="k">Monthly charge</span><span class="v">Rs @Model.Connection.MonthlyCharge.ToString("N2")</span></div>
+                    <div class="stat-line"><span class="k">Security deposit</span><span class="v">Rs @Model.Connection.SecurityDeposit.ToString("N2")</span></div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Connection.StatusReason))
+                    {
+                        <div class="alert-nexus alert-info mt-3">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <div class="fs-14">@Model.Connection.StatusReason</div>
+                        </div>
+                    }
+
+                    <p class="text-muted-silver fs-14 mt-3 mb-0">
+                        For the full statement of your account, the bill history and the receipts, please sign in to
+                        your customer dashboard.
+                    </p>
+                </div>
+            }
+        </div>
+    </div>
+</section>

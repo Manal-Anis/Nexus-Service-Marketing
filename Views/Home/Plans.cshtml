@@ -1,0 +1,127 @@
+@model PlansViewModel
+@{
+    ViewData["Title"] = "Plans and pricing";
+}
+
+<section class="container py-5">
+    <div class="text-center mb-5" data-reveal>
+        <span class="eyebrow">Catalogue</span>
+        <h1 class="section-title mt-2">Every plan, every rate</h1>
+        <p class="section-lead mx-auto mt-2">
+            Prices include the advance payment for the first period. The security deposit is charged once on the
+            activation invoice and the service tax is applied on the discounted total.
+        </p>
+    </div>
+
+    <!-- ------------------------------------------------------------- filters -->
+    <form method="get" asp-controller="Home" asp-action="Plans" class="filter-bar glass mb-4" data-reveal>
+        <div class="row g-3 align-items-end">
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label" for="search">Search</label>
+                <input type="search" class="form-control" id="search" name="search" value="@Model.Search" placeholder="Broadband, STD, hourly..." />
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label" for="category">Service</label>
+                <select class="form-select" id="category" name="category">
+                    <option value="">All services</option>
+                    @foreach (var category in Model.Categories)
+                    {
+                        <option value="@category.Code" selected="@(Model.CategoryCode == category.Code)">@category.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label" for="period">Billing period</label>
+                <select class="form-select" id="period" name="period">
+                    <option value="">Any period</option>
+                    @foreach (var period in Model.BillingPeriods)
+                    {
+                        <option value="@period" selected="@(Model.BillingPeriod == period.ToString())">@period.ToDisplayName()</option>
+                    }
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label" for="minPrice">Min price (Rs)</label>
+                <input type="number" class="form-control" id="minPrice" name="minPrice" value="@Model.MinPrice" min="0" step="50" />
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label" for="maxPrice">Max price (Rs)</label>
+                <input type="number" class="form-control" id="maxPrice" name="maxPrice" value="@Model.MaxPrice" min="0" step="50" />
+            </div>
+            <div class="col-lg-1 col-md-6 d-grid">
+                <button class="btn btn-gold" type="submit"><i class="bi bi-funnel me-1"></i>Filter</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- ------------------------------------------------------------- results -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="text-muted-silver fs-14">@Model.Plans.Count plan(s) found</span>
+        <a class="btn btn-ghost btn-sm" asp-controller="Home" asp-action="Plans"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset</a>
+    </div>
+
+    @if (Model.Plans.Count == 0)
+    {
+        <div class="glass empty-state">
+            <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+                <circle cx="100" cy="80" r="58" stroke="#d4af37" stroke-width="2" opacity=".45" />
+                <circle cx="100" cy="80" r="34" stroke="#c9ccd3" stroke-width="2" opacity=".3" />
+                <path d="M78 80h44M100 58v44" stroke="#d4af37" stroke-width="3" stroke-linecap="round" />
+            </svg>
+            <div class="title">No plan matches those filters</div>
+            <p class="text">Try a wider price range or clear the search term. Our team also builds custom plans for corporate orders.</p>
+            <a class="btn btn-outline-gold" asp-controller="Home" asp-action="Contact">Ask for a custom plan</a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var plan in Model.Plans)
+            {
+                <div class="col-md-6 col-xl-4" data-reveal>
+                    <div class="plan-card glass">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="category-icon mb-0" style="width:46px;height:46px;font-size:1.2rem;"><i class="bi @plan.Icon"></i></div>
+                            <span class="badge-status badge-gold">@plan.Category.Name</span>
+                        </div>
+
+                        <h2 class="h5 mb-1">@plan.Name</h2>
+                        <p class="text-muted-silver fs-14 mb-3">@plan.Description</p>
+
+                        <div class="plan-price mb-3"><span class="currency">Rs</span> @plan.Price.ToString("N0")</div>
+
+                        <div class="mt-auto">
+                            @if (plan.Hours.HasValue)
+                            {
+                                <div class="plan-spec"><span class="k">Included hours</span><span class="v">@plan.Hours h</span></div>
+                            }
+                            @if (plan.SpeedKbps.HasValue)
+                            {
+                                <div class="plan-spec"><span class="k">Speed</span><span class="v">@plan.SpeedKbps Kbps</span></div>
+                            }
+                            @if (plan.ValidityDays.HasValue)
+                            {
+                                <div class="plan-spec"><span class="k">Validity</span><span class="v">@plan.ValidityDays days</span></div>
+                            }
+                            <div class="plan-spec"><span class="k">Billing</span><span class="v">@plan.BillingPeriod.ToDisplayName()</span></div>
+                            @if (plan.LocalRate.HasValue)
+                            {
+                                <div class="plan-spec"><span class="k">Local call</span><span class="v">@plan.LocalRate.Value.ToString("0.00") Rs/min</span></div>
+                            }
+                            @if (plan.StdRate.HasValue)
+                            {
+                                <div class="plan-spec"><span class="k">STD call</span><span class="v">@plan.StdRate.Value.ToString("0.00") Rs/min</span></div>
+                            }
+                            @if (plan.MobileMsgRate.HasValue)
+                            {
+                                <div class="plan-spec"><span class="k">Mobile message</span><span class="v">@plan.MobileMsgRate.Value.ToString("0.00") Rs/min</span></div>
+                            }
+
+                            <a class="btn btn-gold w-100 mt-3" asp-controller="Home" asp-action="PlanDetails" asp-route-id="@plan.Id">View details</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>

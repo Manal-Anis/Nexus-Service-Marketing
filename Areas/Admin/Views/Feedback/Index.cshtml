@@ -1,0 +1,131 @@
+@model List<Feedback>
+@{
+    ViewData["Title"] = "Feedback";
+    var currentState = ViewData["CurrentState"] as string;
+    var currentSearch = ViewData["CurrentSearch"] as string;
+    var pendingCount = ViewData["PendingCount"] as int? ?? 0;
+    var page = ViewData["Page"] as int? ?? 1;
+    var totalPages = ViewData["TotalPages"] as int? ?? 1;
+    var totalRows = ViewData["TotalRows"] as int? ?? 0;
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4"><i class="bi bi-check-circle-fill"></i><div>@success</div></div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4"><i class="bi bi-x-circle-fill"></i><div>@error</div></div>
+}
+
+<div class="glass p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <span class="kpi-label me-2">State</span>
+        <a class="btn btn-sm @(string.IsNullOrEmpty(currentState) ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Feedback" asp-action="Index">All</a>
+        <a class="btn btn-sm @(currentState == "pending" ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Feedback" asp-action="Index" asp-route-state="pending">
+            Waiting for the review (@pendingCount)
+        </a>
+        <a class="btn btn-sm @(currentState == "approved" ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Feedback" asp-action="Index" asp-route-state="approved">Published</a>
+    </div>
+
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <input type="hidden" name="state" value="@currentState" />
+        <input class="form-control" style="max-width:320px" type="search" name="search" value="@currentSearch"
+               placeholder="Customer name or comment" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+    </form>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <path d="M40 45h120v70H85l-25 20v-20H40z" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M65 70h70M65 90h45" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No feedback in this view</div>
+        <p class="text">No rating of a customer matches the current filter.</p>
+    </div>
+}
+else
+{
+    <div class="d-grid gap-3">
+        @foreach (var feedback in Model)
+        {
+            <div class="glass p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="text-silver fw-600">@(feedback.Customer?.FullName ?? "-")</span>
+                            <span class="text-muted-silver fs-14">@feedback.CreatedAt.ToString("dd MMM yyyy")</span>
+                            @if (feedback.Order != null)
+                            {
+                                <span class="order-id-chip">@feedback.Order.OrderId</span>
+                            }
+                        </div>
+
+                        <div class="star-row mb-2">
+                            @for (var star = 1; star <= 5; star++)
+                            {
+                                <i class="bi @(star <= feedback.Rating ? "bi-star-fill" : "bi-star") text-gold"></i>
+                            }
+                            <span class="text-muted-silver fs-14 ms-2">@feedback.Rating of 5</span>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(feedback.Comments))
+                        {
+                            <p class="text-silver fs-14 mb-2">@feedback.Comments</p>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(feedback.AdminResponse))
+                        {
+                            <p class="text-muted-silver fs-14 mb-0"><i class="bi bi-reply me-1"></i>@feedback.AdminResponse</p>
+                        }
+                    </div>
+
+                    <div class="d-flex flex-column gap-2" style="min-width:200px;">
+                        @if (feedback.IsApproved)
+                        {
+                            <span class="badge-status badge-success">Published on the home page</span>
+                            <form method="post" asp-area="Admin" asp-controller="Feedback" asp-action="Reject" asp-route-id="@feedback.Id">
+                                <button class="btn btn-ghost btn-sm w-100" type="submit"><i class="bi bi-eye-slash me-1"></i>Hide it</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="badge-status badge-warning">Waiting for the review</span>
+                            <form method="post" asp-area="Admin" asp-controller="Feedback" asp-action="Approve" asp-route-id="@feedback.Id">
+                                <button class="btn btn-outline-gold btn-sm w-100" type="submit"><i class="bi bi-check2-circle me-1"></i>Publish it</button>
+                            </form>
+                        }
+
+                        <form method="post" asp-area="Admin" asp-controller="Feedback" asp-action="Respond" asp-route-id="@feedback.Id" class="d-flex gap-1">
+                            <input name="response" class="form-control form-control-sm" placeholder="Your reply" />
+                            <button class="btn btn-ghost btn-sm" type="submit" title="Save the reply"><i class="bi bi-send"></i></button>
+                        </form>
+
+                        <form method="post" asp-area="Admin" asp-controller="Feedback" asp-action="Delete" asp-route-id="@feedback.Id"
+                              data-confirm="Delete this feedback?">
+                            <button class="btn btn-ghost btn-sm w-100" type="submit"><i class="bi bi-trash me-1"></i>Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @await Html.PartialAsync("_Pager", new PagerViewModel
+    {
+        Page = page,
+        TotalPages = totalPages,
+        TotalRows = totalRows,
+        RouteValues = new Dictionary<string, string?>
+        {
+            ["state"] = currentState,
+            ["search"] = currentSearch
+        }
+    })
+}

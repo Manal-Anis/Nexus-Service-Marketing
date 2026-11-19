@@ -1,0 +1,101 @@
+@model RecordPaymentViewModel
+@{
+    ViewData["Title"] = "Record a receipt";
+}
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <form method="post" asp-area="Vendor" asp-controller="Payments" asp-action="Record">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="BillId" />
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The invoice</h2>
+
+                <div class="stat-line"><span class="k">Bill number</span><span class="v">@Model.BillNumber</span></div>
+                <div class="stat-line"><span class="k">Account id</span><span class="v">@Model.AccountId</span></div>
+                <div class="stat-line"><span class="k">Customer</span><span class="v">@Model.CustomerName</span></div>
+                <div class="stat-line"><span class="k">Invoice total</span><span class="v">@Model.TotalAmount.ToString("N2") Rs</span></div>
+                <div class="stat-line stat-total"><span class="k">Amount due</span><span class="v text-gold">@Model.AmountDue.ToString("N2") Rs</span></div>
+            </div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The cash</h2>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Amount">Amount received</label>
+                        <input asp-for="Amount" class="form-control" type="number" min="0.01" step="0.01" />
+                        <span asp-validation-for="Amount" class="text-danger fs-14"></span>
+                        <button type="button" class="btn btn-ghost btn-sm mt-2" id="payFull">
+                            <i class="bi bi-check2-all me-1"></i>Pay the full amount
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="PaidOn">Date of the receipt</label>
+                        <input asp-for="PaidOn" class="form-control" type="date" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="Remarks">Remarks</label>
+                        <input asp-for="Remarks" class="form-control" placeholder="Paid in cash at the counter" />
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-gold" type="submit">
+                <i class="bi bi-cash-stack me-1"></i>Record the receipt
+            </button>
+            <a class="btn btn-ghost" asp-area="Vendor" asp-controller="Payments" asp-action="Index">Cancel</a>
+        </form>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">How it works</h2>
+            <ul class="timeline">
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Cash at the counter</div>
+                    <div class="timeline-meta">The customer pays the installer or the retail counter</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Receipt number</div>
+                    <div class="timeline-meta">A receipt number is printed for the customer</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Partial payment</div>
+                    <div class="timeline-meta">The invoice stays "Due" with the smaller outstanding amount</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Full payment</div>
+                    <div class="timeline-meta">The invoice turns into "Paid" and the connection stays active</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var button = document.getElementById('payFull');
+            var amount = document.getElementById('Amount');
+            if (!button || !amount) return;
+
+            button.addEventListener('click', function () {
+                amount.value = @Model.AmountDue.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            });
+        });
+    </script>
+}

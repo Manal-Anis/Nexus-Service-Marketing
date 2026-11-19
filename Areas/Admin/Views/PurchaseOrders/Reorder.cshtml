@@ -1,0 +1,65 @@
+@model List<ReorderSuggestionViewModel>
+@{
+    ViewData["Title"] = "Reorder suggestion";
+}
+
+<div class="glass p-3 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <p class="text-muted-silver fs-14 mb-0">
+        Every device whose stock reached the reorder level is listed here with the quantity that
+        should be ordered.
+    </p>
+    <a class="btn btn-gold" asp-area="Admin" asp-controller="PurchaseOrders" asp-action="Create">
+        <i class="bi bi-plus-lg me-1"></i>Raise a purchase order
+    </a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <circle cx="100" cy="80" r="42" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M78 80l16 16 30-32" stroke="#c9ccd3" stroke-width="2" opacity=".55" />
+        </svg>
+        <div class="title">The stock is complete</div>
+        <p class="text">Every device of the store room is above its reorder level.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>Supplier</th>
+                    <th class="num">Stock</th>
+                    <th class="num">Reorder level</th>
+                    <th class="num">Suggested quantity</th>
+                    <th>State</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var suggestion in Model)
+                {
+                    <tr>
+                        <td class="text-silver fw-600">@suggestion.Product.Name</td>
+                        <td class="fs-14 text-muted-silver">@(suggestion.Product.Supplier?.Name ?? "-")</td>
+                        <td class="num">@suggestion.Product.StockQuantity</td>
+                        <td class="num text-muted-silver">@suggestion.Product.ReorderLevel</td>
+                        <td class="num text-gold">@suggestion.SuggestedQuantity</td>
+                        <td>
+                            @if (suggestion.Severity == "Out of stock")
+                            {
+                                <span class="badge-status badge-danger">Out of stock</span>
+                            }
+                            else
+                            {
+                                <span class="badge-status badge-warning">Below the reorder level</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,121 @@
+@model CustomerPaymentsViewModel
+@{
+    ViewData["Title"] = "Payments and receipts";
+    var collected = Model.Payments.Sum(p => p.Amount);
+    var held = Model.Deposits.Where(d => d.Status == SecurityDepositStatus.Held).Sum(d => d.NetAmount);
+    var refunded = Model.Deposits.Where(d => d.Status == SecurityDepositStatus.Refunded).Sum(d => d.NetAmount);
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-label">Cash collected</div>
+            <div class="kpi-value">@collected.ToString("N2") <small>Rs</small></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-label">Deposits held</div>
+            <div class="kpi-value">@held.ToString("N2") <small>Rs</small></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-label">Deposits refunded</div>
+            <div class="kpi-value">@refunded.ToString("N2") <small>Rs</small></div>
+        </div>
+    </div>
+</div>
+
+<!-- ------------------------------------------------------------------ receipts -->
+<div class="glass p-4 mb-4">
+    <h2 class="h5 mb-3">Counter receipts</h2>
+
+    @if (Model.Payments.Count == 0)
+    {
+        <div class="empty-state">
+            <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+                <rect x="50" y="40" width="100" height="80" rx="10" stroke="#d4af37" stroke-width="2" opacity=".5" />
+                <path d="M70 70h60M70 90h40" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+            </svg>
+            <div class="title">No receipt yet</div>
+            <p class="text">The counter receipt appears here as soon as you pay at the retail shop.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table-glass">
+                <thead>
+                    <tr>
+                        <th>Receipt</th>
+                        <th>Bill</th>
+                        <th>Account</th>
+                        <th>Date</th>
+                        <th>Received by</th>
+                        <th>Remarks</th>
+                        <th class="num">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var payment in Model.Payments)
+                    {
+                        <tr>
+                            <td class="text-silver">@payment.ReceiptNumber</td>
+                            <td class="fs-14">
+                                <a asp-area="Customer" asp-controller="Bills" asp-action="Details" asp-route-billNumber="@payment.Bill?.BillNumber">@payment.Bill?.BillNumber</a>
+                            </td>
+                            <td class="fs-14">@payment.Bill?.Connection?.AccountId</td>
+                            <td class="fs-14">@payment.PaidOn.ToString("dd MMM yyyy")</td>
+                            <td class="fs-14">@payment.ReceivedByName</td>
+                            <td class="fs-14 text-muted-silver">@payment.Remarks</td>
+                            <td class="num text-silver">@payment.Amount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- ------------------------------------------------------------------ deposit ledger -->
+<div class="glass p-4">
+    <h2 class="h5 mb-3">Security deposit ledger</h2>
+
+    @if (Model.Deposits.Count == 0)
+    {
+        <p class="text-muted-silver fs-14 mb-0">No security deposit has been recorded for your account.</p>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table-glass">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Gross</th>
+                        <th>Discount</th>
+                        <th>Net held</th>
+                        <th>Collected on</th>
+                        <th>Status</th>
+                        <th>Refunded on</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var deposit in Model.Deposits)
+                    {
+                        <tr>
+                            <td class="fs-14 text-silver">@deposit.Order?.OrderId</td>
+                            <td class="num fs-14">@deposit.Amount.ToString("N2")</td>
+                            <td class="num fs-14">- @deposit.DiscountAmount.ToString("N2")</td>
+                            <td class="num text-silver">@deposit.NetAmount.ToString("N2")</td>
+                            <td class="fs-14">@deposit.HeldOn.ToString("dd MMM yyyy")</td>
+                            <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(deposit.Status))</td>
+                            <td class="fs-14">@(deposit.RefundedOn.HasValue ? deposit.RefundedOn.Value.ToString("dd MMM yyyy") : "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

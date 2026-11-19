@@ -1,0 +1,212 @@
+@model VendorPaymentsViewModel
+@{
+    ViewData["Title"] = "Payments";
+    var currentStatus = ViewData["CurrentStatus"] as string;
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4">
+        <i class="bi bi-check-circle-fill"></i>
+        <div>@success</div>
+    </div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-cash-stack"></i></span>
+            <div class="kpi-label">Cash collected</div>
+            <div class="kpi-value">@Model.TotalCollected.ToString("N0")</div>
+            <div class="kpi-delta">@Model.Payments.Count receipt(s)</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+            <div class="kpi-label">Outstanding</div>
+            <div class="kpi-value">@Model.TotalOutstanding.ToString("N0")</div>
+            <div class="kpi-delta">Rupees still to be collected</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-piggy-bank"></i></span>
+            <div class="kpi-label">Deposits held</div>
+            <div class="kpi-value">@Model.DepositsHeld.ToString("N0")</div>
+            <div class="kpi-delta">Refundable security deposits</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-arrow-return-left"></i></span>
+            <div class="kpi-label">Deposits refunded</div>
+            <div class="kpi-value">@Model.DepositsRefunded.ToString("N0")</div>
+            <div class="kpi-delta">Already returned to the customers</div>
+        </div>
+    </div>
+</div>
+
+<div class="alert-nexus alert-info mb-4">
+    <i class="bi bi-info-circle-fill"></i>
+    <div class="fs-14">
+        Nexus is a cash on delivery network. There is no payment gateway, no card entry and no wallet -
+        the customer pays the installer or the retail counter and the receipt is recorded here.
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- ------------------------------------------------------------- invoices -->
+    <div class="col-xl-7">
+        <div class="glass p-4 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h2 class="h5 mb-0">Invoices</h2>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-sm @(string.IsNullOrEmpty(currentStatus) ? "btn-gold" : "btn-ghost")"
+                       asp-area="Vendor" asp-controller="Payments" asp-action="Index">All</a>
+                    @foreach (var status in Enum.GetValues<BillStatus>())
+                    {
+                        <a class="btn btn-sm @(currentStatus == status.ToString() ? "btn-gold" : "btn-ghost")"
+                           asp-area="Vendor" asp-controller="Payments" asp-action="Index" asp-route-status="@status">@status.ToDisplayName()</a>
+                    }
+                </div>
+            </div>
+
+            @if (Model.Bills.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No invoice of your desk matches the current filter.</p>
+            }
+            else
+            {
+                <div class="table-wrap table-wrap-lg">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Bill</th>
+                                <th>Account</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th class="num">Due</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var bill in Model.Bills)
+                            {
+                                <tr>
+                                    <td class="text-silver fs-14">@bill.BillNumber</td>
+                                    <td><span class="account-id-chip">@bill.Connection?.AccountId</span></td>
+                                    <td class="fs-14">@bill.Connection?.Customer?.FullName</td>
+                                    <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(bill.Status))</td>
+                                    <td class="num @(bill.AmountDue > 0 ? "text-danger-silver" : "text-muted-silver")">@bill.AmountDue.ToString("N2")</td>
+                                    <td class="text-end">
+                                        @if (bill.AmountDue > 0)
+                                        {
+                                            <div class="d-inline-flex gap-1">
+                                                <a class="btn btn-gold btn-sm" asp-area="Vendor" asp-controller="Payments" asp-action="Record" asp-route-billId="@bill.Id">
+                                                    Receipt
+                                                </a>
+                                                <form method="post" asp-area="Vendor" asp-controller="Payments" asp-action="MarkAsPaid"
+                                                      data-confirm="Mark @bill.BillNumber as fully paid for @bill.AmountDue.ToString("N2") Rs?">
+                                                    <input type="hidden" name="billId" value="@bill.Id" />
+                                                    <button class="btn btn-ghost btn-sm" type="submit" title="Mark as paid (full)">
+                                                        <i class="bi bi-check2-circle me-1"></i>Mark paid
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <a class="btn btn-ghost btn-sm" asp-area="Vendor" asp-controller="Billing" asp-action="Details" asp-route-id="@bill.Id">Open</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">Counter receipts</h2>
+
+            @if (Model.Payments.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No cash has been received yet.</p>
+            }
+            else
+            {
+                <div class="table-wrap table-wrap-lg">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Receipt</th>
+                                <th>Bill</th>
+                                <th>Date</th>
+                                <th>Received by</th>
+                                <th class="num">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var payment in Model.Payments)
+                            {
+                                <tr>
+                                    <td class="text-silver fs-14">@payment.ReceiptNumber</td>
+                                    <td class="fs-14">@payment.Bill?.BillNumber</td>
+                                    <td class="fs-14">@payment.PaidOn.ToString("dd MMM yyyy")</td>
+                                    <td class="fs-14 text-muted-silver">@payment.ReceivedByName</td>
+                                    <td class="num text-silver">@payment.Amount.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------- deposits -->
+    <div class="col-xl-5">
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">Security deposit ledger</h2>
+
+            @if (Model.Deposits.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No deposit has been recorded yet.</p>
+            }
+            else
+            {
+                <div class="d-grid gap-2">
+                    @foreach (var deposit in Model.Deposits)
+                    {
+                        <div class="doc-tile">
+                            <span class="icon"><i class="bi bi-shield-lock"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600 fs-14">
+                                    @deposit.Order?.OrderId - @deposit.NetAmount.ToString("N2") Rs
+                                </div>
+                                <small class="text-muted-silver">
+                                    Gross @deposit.Amount.ToString("N2") - discount @deposit.DiscountAmount.ToString("N2")
+                                    - held on @deposit.HeldOn.ToString("dd MMM yyyy")
+                                    @if (deposit.RefundedOn.HasValue)
+                                    {
+                                        <span>- refunded on @deposit.RefundedOn.Value.ToString("dd MMM yyyy")</span>
+                                    }
+                                </small>
+                            </div>
+                            @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(deposit.Status))
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,150 @@
+@model GenerateBillViewModel
+@{
+    ViewData["Title"] = "Generate a bill";
+    var connections = ViewData["Connections"] as List<Connection> ?? new List<Connection>();
+}
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" asp-area="Vendor" asp-controller="Billing" asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The connection</h2>
+
+                <label class="form-label" for="connectionSelect">Connection</label>
+                <select class="form-select mb-3" id="connectionSelect" name="ConnectionId">
+                    <option value="">Choose a connection</option>
+                    @foreach (var connection in connections)
+                    {
+                        <option value="@connection.Id" selected="@(connection.Id == Model.ConnectionId)"
+                                data-account="@connection.AccountId"
+                                data-customer="@connection.Customer?.FullName"
+                                data-plan="@connection.Plan?.Name"
+                                data-monthly="@connection.MonthlyCharge">
+                            @connection.AccountId - @connection.Customer?.FullName - @connection.Plan?.Name
+                        </option>
+                    }
+                </select>
+
+                <div class="stat-line"><span class="k">Account id</span><span class="v" id="billAccount">@Model.AccountId</span></div>
+                <div class="stat-line"><span class="k">Customer</span><span class="v" id="billCustomer">@Model.CustomerName</span></div>
+                <div class="stat-line"><span class="k">Plan</span><span class="v" id="billPlan">@Model.PlanName</span></div>
+            </div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The period</h2>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="PeriodStart">Period start</label>
+                        <input asp-for="PeriodStart" class="form-control" type="date" />
+                        <span asp-validation-for="PeriodStart" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="PeriodEnd">Period end</label>
+                        <input asp-for="PeriodEnd" class="form-control" type="date" />
+                        <span asp-validation-for="PeriodEnd" class="text-danger fs-14"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The usage</h2>
+
+                <div class="row g-3">
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label" asp-for="LocalMinutes">Local minutes</label>
+                        <input asp-for="LocalMinutes" class="form-control" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label" asp-for="StdMinutes">STD minutes</label>
+                        <input asp-for="StdMinutes" class="form-control" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label" asp-for="MobileMinutes">Mobile minutes</label>
+                        <input asp-for="MobileMinutes" class="form-control" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label" asp-for="HoursUsed">Hours used</label>
+                        <input asp-for="HoursUsed" class="form-control" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="ReplacementCharge">Replacement charge</label>
+                        <input asp-for="ReplacementCharge" class="form-control" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="ReplacementReason">Reason of the replacement</label>
+                        <input asp-for="ReplacementReason" class="form-control" placeholder="The router was damaged" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="DiscountPercent">Discount percent</label>
+                        <input asp-for="DiscountPercent" class="form-control" type="number" min="0" max="100" step="0.01" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Remarks">Remarks</label>
+                        <input asp-for="Remarks" class="form-control" placeholder="Payable at the counter" />
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-gold" type="submit">
+                <i class="bi bi-calculator me-1"></i>Calculate and raise the bill
+            </button>
+            <a class="btn btn-ghost" asp-area="Vendor" asp-controller="Billing" asp-action="Index">Cancel</a>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">How the bill is built</h2>
+            <ul class="timeline">
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Charges</div>
+                    <div class="timeline-meta">Plan rental, local, STD, mobile and hours used</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Replacement</div>
+                    <div class="timeline-meta">The charge of a damaged device</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Previous due</div>
+                    <div class="timeline-meta">The unpaid balance is carried forward</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Discount and tax</div>
+                    <div class="timeline-meta">The discount is deducted, then the service tax is added</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var select = document.getElementById('connectionSelect');
+            if (!select) return;
+
+            select.addEventListener('change', function () {
+                var option = select.selectedOptions[0];
+                if (!option) return;
+                document.getElementById('billAccount').textContent = option.dataset.account || '';
+                document.getElementById('billCustomer').textContent = option.dataset.customer || '';
+                document.getElementById('billPlan').textContent = option.dataset.plan || '';
+            });
+        });
+    </script>
+}

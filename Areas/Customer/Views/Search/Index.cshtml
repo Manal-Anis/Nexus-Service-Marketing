@@ -1,0 +1,157 @@
+@model CustomerSearchViewModel
+@{
+    ViewData["Title"] = "Advanced search";
+    var filters = Model.Filters;
+    var result = Model.Result;
+}
+
+<div class="glass p-4 mb-4">
+    <form method="get" asp-area="Customer" asp-controller="Search" asp-action="Index">
+        <div class="row g-3">
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" asp-for="Filters.UniqueId">Order or account id</label>
+                <input asp-for="Filters.UniqueId" class="form-control" placeholder="D0000000001" />
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" asp-for="Filters.Name">Customer name</label>
+                <input asp-for="Filters.Name" class="form-control" />
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" asp-for="Filters.ConnectionType">Service type</label>
+                <input asp-for="Filters.ConnectionType" class="form-control" placeholder="Broadband" />
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" asp-for="Filters.ContactNumber">Contact number</label>
+                <input asp-for="Filters.ContactNumber" class="form-control" />
+            </div>
+            <div class="col-md-4 col-xl-2">
+                <label class="form-label" asp-for="Filters.DateFrom">From date</label>
+                <input asp-for="Filters.DateFrom" class="form-control" type="date" />
+            </div>
+            <div class="col-md-4 col-xl-2">
+                <label class="form-label" asp-for="Filters.DateTo">To date</label>
+                <input asp-for="Filters.DateTo" class="form-control" type="date" />
+            </div>
+            <div class="col-md-4 col-xl-3">
+                <label class="form-label" asp-for="Filters.SortBy">Sort by</label>
+                <select asp-for="Filters.SortBy" class="form-select">
+                    <option value="date-desc">Newest first</option>
+                    <option value="date-asc">Oldest first</option>
+                    <option value="amount-desc">Highest amount</option>
+                    <option value="amount-asc">Lowest amount</option>
+                    <option value="id-asc">Order id A to Z</option>
+                </select>
+            </div>
+            <div class="col-md-4 col-xl-2">
+                <label class="form-label" asp-for="Filters.PageSize">Rows per page</label>
+                <select asp-for="Filters.PageSize" class="form-select">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <button type="submit" class="btn btn-gold">
+                <i class="bi bi-search me-1"></i>Search
+            </button>
+            <a class="btn btn-ghost" asp-area="Customer" asp-controller="Search" asp-action="Index">Reset</a>
+            <a class="btn btn-outline-gold ms-auto" asp-area="Customer" asp-controller="Search" asp-action="Export"
+               asp-route-UniqueId="@filters.UniqueId" asp-route-Name="@filters.Name"
+               asp-route-ConnectionType="@filters.ConnectionType" asp-route-ContactNumber="@filters.ContactNumber"
+               asp-route-DateFrom="@filters.DateFrom?.ToString("yyyy-MM-dd")" asp-route-DateTo="@filters.DateTo?.ToString("yyyy-MM-dd")"
+               asp-route-SortBy="@filters.SortBy" asp-route-PageSize="@filters.PageSize">
+                <i class="bi bi-download me-1"></i>Export CSV
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="kpi-label">@result.TotalRows record(s) found</span>
+    @if (result.TotalPages > 1)
+    {
+        <span class="text-muted-silver fs-14">Page @result.Page of @result.TotalPages</span>
+    }
+</div>
+
+@if (result.Rows.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <circle cx="85" cy="70" r="30" stroke="#d4af37" stroke-width="2" opacity=".55" />
+            <path d="M108 95l22 24" stroke="#c9ccd3" stroke-width="3" opacity=".5" />
+        </svg>
+        <div class="title">Nothing found</div>
+        <p class="text">No record of your account matches the filters. Try a wider date range.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap mb-3">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Order id</th>
+                    <th>Account id</th>
+                    <th>Plan</th>
+                    <th>Type</th>
+                    <th>City</th>
+                    <th>Contact</th>
+                    <th>Order status</th>
+                    <th>Connection</th>
+                    <th class="num">Amount</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in result.Rows)
+                {
+                    <tr>
+                        <td><span class="order-id-chip">@row.OrderId</span></td>
+                        <td class="fs-14">@(row.AccountId ?? "-")</td>
+                        <td class="fs-14 text-silver">@row.PlanName</td>
+                        <td class="fs-14">@row.ServiceType</td>
+                        <td class="fs-14">@(row.CityName ?? "-")</td>
+                        <td class="fs-14">@(row.ContactNumber ?? "-")</td>
+                        <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(row.OrderStatus))</td>
+                        <td>
+                            @if (row.ConnectionStatus.HasValue)
+                            {
+                                @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(row.ConnectionStatus.Value))
+                            }
+                            else
+                            {
+                                <span class="text-muted-silver fs-14">-</span>
+                            }
+                        </td>
+                        <td class="num text-silver">@row.TotalAmount.ToString("N2")</td>
+                        <td class="fs-14">@row.Date.ToString("dd MMM yyyy")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (result.TotalPages > 1)
+    {
+        <nav aria-label="Search result pages">
+            <ul class="pagination pagination-nexus justify-content-center">
+                @for (var page = 1; page <= result.TotalPages; page++)
+                {
+                    <li class="page-item @(page == result.Page ? "active" : "")">
+                        <a class="page-link"
+                           asp-area="Customer" asp-controller="Search" asp-action="Index"
+                           asp-route-UniqueId="@filters.UniqueId" asp-route-Name="@filters.Name"
+                           asp-route-ConnectionType="@filters.ConnectionType" asp-route-ContactNumber="@filters.ContactNumber"
+                           asp-route-DateFrom="@filters.DateFrom?.ToString("yyyy-MM-dd")" asp-route-DateTo="@filters.DateTo?.ToString("yyyy-MM-dd")"
+                           asp-route-SortBy="@filters.SortBy" asp-route-PageSize="@filters.PageSize"
+                           asp-route-Page="@(page)">@(page)</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}

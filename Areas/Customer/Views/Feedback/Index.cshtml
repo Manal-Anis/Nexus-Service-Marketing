@@ -1,0 +1,68 @@
+@model CustomerFeedbackViewModel
+@{
+    ViewData["Title"] = "Feedback";
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">Rate the service</h2>
+
+            <form method="post" asp-area="Customer" asp-controller="Feedback" asp-action="Index">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="mb-4">
+                    <label class="form-label" asp-for="Rating">Your rating</label>
+                    <div class="star-rating">
+                        @for (var i = 1; i <= 5; i++)
+                        {
+                            var value = i;
+                            <input type="radio" asp-for="Rating" id="star@(value)" value="@value" checked="@(Model.Rating == value)" />
+                            <label for="star@(value)" title="@value star(s)"><i class="bi bi-star-fill"></i></label>
+                        }
+                    </div>
+                    <span asp-validation-for="Rating" class="text-danger fs-14"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" asp-for="OrderId">Related order</label>
+                    <select asp-for="OrderId" class="form-select">
+                        <option value="">Without an order</option>
+                        @foreach (var order in Model.Orders)
+                        {
+                            <option value="@order.Id">@order.OrderId - @order.Plan?.Name</option>
+                        }
+                    </select>
+                    <span asp-validation-for="OrderId" class="text-danger fs-14"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" asp-for="Comments">Your comments</label>
+                    <textarea asp-for="Comments" class="form-control" rows="5" placeholder="How was the installation and the service?"></textarea>
+                    <span asp-validation-for="Comments" class="text-danger fs-14"></span>
+                </div>
+
+                <button type="submit" class="btn btn-gold">
+                    <i class="bi bi-send me-1"></i>Send the feedback
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">How it works</h2>
+            <div class="stat-line"><span class="k">1</span><span class="v">Your rating and comments are stored against your account.</span></div>
+            <div class="stat-line"><span class="k">2</span><span class="v">The administrator reviews the entry.</span></div>
+            <div class="stat-line"><span class="k">3</span><span class="v">Approved entries with a comment appear as a testimonial on the home page.</span></div>
+
+            <div class="alert-nexus alert-info mt-4">
+                <i class="bi bi-chat-quote"></i>
+                <div class="fs-14">
+                    Every rating is read by the administrator. Repeated complaints about the same partner are
+                    forwarded to the vendor manager.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

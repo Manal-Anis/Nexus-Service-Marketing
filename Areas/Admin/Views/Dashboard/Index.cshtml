@@ -1,0 +1,307 @@
+@model AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Administrator dashboard";
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4">
+        <i class="bi bi-check-circle-fill"></i>
+        <div>@success</div>
+    </div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+<!-- ------------------------------------------------------------------ welcome -->
+<div class="glass p-4 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+        <div class="eyebrow">Nexus Communication System</div>
+        <h2 class="h4 mb-1">Network overview</h2>
+        <p class="text-muted-silver fs-14 mb-0">
+            <i class="bi bi-people me-1"></i>@Model.TotalCustomers customers
+            <span class="mx-2">|</span>
+            <i class="bi bi-shop me-1"></i>@Model.ApprovedVendors approved partners
+            <span class="mx-2">|</span>
+            <i class="bi bi-clock-history me-1"></i>@Model.PendingVendors registrations waiting
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-gold" asp-area="Admin" asp-controller="Vendors" asp-action="Index">
+            <i class="bi bi-shop me-1"></i>Service partners
+        </a>
+        <a class="btn btn-ghost" asp-area="Admin" asp-controller="Reports" asp-action="Index">
+            <i class="bi bi-bar-chart me-1"></i>Reports
+        </a>
+    </div>
+</div>
+
+<!-- ------------------------------------------------------------------ KPI -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-receipt"></i></span>
+            <div class="kpi-label">Orders of the network</div>
+            <div class="kpi-value">@Model.TotalOrders</div>
+            <div class="kpi-delta">@Model.PendingOrders waiting for the survey - @Model.FeasibleOrders feasible</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-router"></i></span>
+            <div class="kpi-label">Connections</div>
+            <div class="kpi-value">@Model.TotalConnections</div>
+            <div class="kpi-delta">@Model.ActiveConnections live - @Model.InactiveConnections suspended</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-cash-stack"></i></span>
+            <div class="kpi-label">Cash collected</div>
+            <div class="kpi-value">@Model.Collected.ToString("N0")</div>
+            <div class="kpi-delta">@Model.TotalBilled.ToString("N0") Rs billed in total</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+            <div class="kpi-label">Outstanding</div>
+            <div class="kpi-value">@Model.Outstanding.ToString("N0")</div>
+            <div class="kpi-delta">@Model.TotalInvoices invoice(s) raised in total</div>
+        </div>
+    </div>
+</div>
+
+<!-- ------------------------------------------------------------------ charts -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-4">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">Orders by lifecycle state</h2>
+            @if (Model.OrdersByStatus.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No order has been placed yet.</p>
+            }
+            else
+            {
+                <div style="height:260px">
+                    <canvas id="chartOrdersByStatus"></canvas>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">Billed amount and orders over the last six months</h2>
+            <div style="height:260px">
+                <canvas id="chartRevenueTrend"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-6">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">Connections per service</h2>
+            @if (Model.ConnectionsByType.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No connection has been activated yet.</p>
+            }
+            else
+            {
+                <div style="height:240px">
+                    <canvas id="chartConnectionsByType"></canvas>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">Orders per month</h2>
+            <div style="height:240px">
+                <canvas id="chartOrderTrend"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- ------------------------------------------------------------- top plans -->
+    <div class="col-xl-6">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">The most ordered plans</h2>
+            @if (Model.TopPlans.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No plan has been ordered yet.</p>
+            }
+            else
+            {
+                <div class="d-grid gap-2">
+                    @foreach (var plan in Model.TopPlans)
+                    {
+                        <div class="doc-tile">
+                            <span class="icon"><i class="bi bi-collection"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600">@plan.Name</div>
+                                <small class="text-muted-silver">@plan.Count order(s)</small>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------- top cities -->
+    <div class="col-xl-6">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">The busiest cities</h2>
+            @if (Model.TopCities.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No order has been placed yet.</p>
+            }
+            else
+            {
+                <div class="d-grid gap-2">
+                    @foreach (var city in Model.TopCities)
+                    {
+                        <div class="doc-tile">
+                            <span class="icon"><i class="bi bi-geo-alt"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600">@city.City</div>
+                                <small class="text-muted-silver">@city.Count order(s)</small>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var colors = window.nexusChartColors;
+
+            var statusCanvas = document.getElementById('chartOrdersByStatus');
+            if (statusCanvas) {
+                window.nexusChart(statusCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: @Html.Raw(Json.Serialize(Model.OrdersByStatus.Keys.ToList())),
+                        datasets: [{
+                            data: @Html.Raw(Json.Serialize(Model.OrdersByStatus.Values.ToList())),
+                            backgroundColor: [colors.gold, colors.goldLight, '#6f8f6a', colors.goldDeep, '#b5533f', '#5a5c66'],
+                            borderColor: 'rgba(8,8,10,0.85)',
+                            borderWidth: 2,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        cutout: '62%',
+                        plugins: { legend: { position: 'bottom' } },
+                        scales: {}
+                    }
+                });
+            }
+
+            var revenueCanvas = document.getElementById('chartRevenueTrend');
+            if (revenueCanvas) {
+                var months = @Html.Raw(Json.Serialize(Model.RevenueTrend.Select(t => t.Month).ToList()));
+                var amounts = @Html.Raw(Json.Serialize(Model.RevenueTrend.Select(t => t.Amount).ToList()));
+                window.nexusChart(revenueCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Billed (Rs)',
+                            data: amounts,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            backgroundColor: function (context) {
+                                var chart = context.chart;
+                                if (!chart.chartArea) return 'rgba(212,175,55,0.6)';
+                                return window.nexusChartGradient(chart.ctx, chart.chartArea, 'rgba(212,175,55,0.95)', 'rgba(212,175,55,0.2)');
+                            }
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false } },
+                            y: { ticks: { color: colors.silverMuted, callback: function (v) { return v.toLocaleString(); } } }
+                        }
+                    }
+                });
+            }
+
+            var orderCanvas = document.getElementById('chartOrderTrend');
+            if (orderCanvas) {
+                var orderMonths = @Html.Raw(Json.Serialize(Model.OrderTrend.Select(t => t.Month).ToList()));
+                var orderCounts = @Html.Raw(Json.Serialize(Model.OrderTrend.Select(t => t.Count).ToList()));
+                window.nexusChart(orderCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: orderMonths,
+                        datasets: [{
+                            label: 'Orders',
+                            data: orderCounts,
+                            borderColor: colors.silver,
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#e8e9ed',
+                            pointBorderColor: 'rgba(8,8,10,0.9)',
+                            fill: true,
+                            backgroundColor: function (context) {
+                                var chart = context.chart;
+                                if (!chart.chartArea) return 'rgba(201,204,211,0.15)';
+                                return window.nexusChartGradient(chart.ctx, chart.chartArea, 'rgba(201,204,211,0.35)', 'rgba(201,204,211,0.02)');
+                            }
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.06)' } },
+                            y: { ticks: { color: colors.silverMuted, precision: 0 } }
+                        }
+                    }
+                });
+            }
+
+            var mixCanvas = document.getElementById('chartConnectionsByType');
+            if (mixCanvas) {
+                window.nexusChart(mixCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: @Html.Raw(Json.Serialize(Model.ConnectionsByType.Keys.ToList())),
+                        datasets: [{
+                            label: 'Connections',
+                            data: @Html.Raw(Json.Serialize(Model.ConnectionsByType.Values.ToList())),
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            backgroundColor: function (context) {
+                                var chart = context.chart;
+                                if (!chart.chartArea) return 'rgba(201,204,211,0.6)';
+                                return window.nexusChartGradient(chart.ctx, chart.chartArea, 'rgba(201,204,211,0.95)', 'rgba(201,204,211,0.25)');
+                            }
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } },
+                        scales: { x: { grid: { display: false } }, y: { ticks: { precision: 0 } } }
+                    }
+                });
+            }
+        });
+    </script>
+}

@@ -1,0 +1,111 @@
+@model List<Bill>
+@{
+    ViewData["Title"] = "Bills";
+    var currentSearch = ViewData["CurrentSearch"] as string;
+    var currentStatus = ViewData["CurrentStatus"] as string;
+    var currentType = ViewData["CurrentType"] as string;
+    var page = ViewData["Page"] as int? ?? 1;
+    var totalPages = ViewData["TotalPages"] as int? ?? 1;
+    var totalRows = ViewData["TotalRows"] as int? ?? 0;
+}
+
+<div class="glass p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <span class="kpi-label me-2">State</span>
+        <a class="btn btn-sm @(string.IsNullOrEmpty(currentStatus) ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Bills" asp-action="Index">All</a>
+        @foreach (var status in Enum.GetValues<BillStatus>())
+        {
+            <a class="btn btn-sm @(currentStatus == status.ToString() ? "btn-gold" : "btn-ghost")"
+               asp-area="Admin" asp-controller="Bills" asp-action="Index" asp-route-status="@status">@status.ToDisplayName()</a>
+        }
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <span class="kpi-label me-2">Type</span>
+        <a class="btn btn-sm @(string.IsNullOrEmpty(currentType) ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Bills" asp-action="Index" asp-route-status="@currentStatus">All</a>
+        @foreach (var type in Enum.GetValues<BillType>())
+        {
+            <a class="btn btn-sm @(currentType == type.ToString() ? "btn-gold" : "btn-ghost")"
+               asp-area="Admin" asp-controller="Bills" asp-action="Index" asp-route-status="@currentStatus" asp-route-type="@type">@type.ToDisplayName()</a>
+        }
+    </div>
+
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <input type="hidden" name="status" value="@currentStatus" />
+        <input type="hidden" name="type" value="@currentType" />
+        <input class="form-control" style="max-width:300px" type="search" name="search" value="@currentSearch"
+               placeholder="Bill number, account id or customer" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+        <a class="btn btn-ghost ms-auto" asp-area="Admin" asp-controller="Bills" asp-action="Export"
+           asp-route-search="@currentSearch" asp-route-status="@currentStatus">
+            <i class="bi bi-filetype-csv me-1"></i>Export CSV
+        </a>
+    </form>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <path d="M45 30h110v100H45z" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M65 55h70M65 75h70M65 95h40" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No bill in this view</div>
+        <p class="text">No bill of the network matches the current filter.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Bill number</th>
+                    <th>Account id</th>
+                    <th>Customer</th>
+                    <th>Type</th>
+                    <th>Due date</th>
+                    <th class="num">Total</th>
+                    <th class="num">Paid</th>
+                    <th class="num">Due</th>
+                    <th>State</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var bill in Model)
+                {
+                    <tr>
+                        <td><span class="order-id-chip">@bill.BillNumber</span></td>
+                        <td><span class="account-id-chip">@(bill.Connection?.AccountId ?? "-")</span></td>
+                        <td class="fs-14">@(bill.Connection?.Customer?.FullName ?? "-")</td>
+                        <td class="fs-14 text-muted-silver">@bill.BillType.ToDisplayName()</td>
+                        <td class="fs-14">@bill.DueDate.ToString("dd MMM yyyy")</td>
+                        <td class="num text-silver">@bill.TotalAmount.ToString("N2")</td>
+                        <td class="num text-muted-silver">@bill.AmountPaid.ToString("N2")</td>
+                        <td class="num @(bill.AmountDue > 0 ? "text-danger" : "text-muted-silver")">@bill.AmountDue.ToString("N2")</td>
+                        <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(bill.Status))</td>
+                        <td class="text-end">
+                            <a class="btn btn-ghost btn-sm" asp-area="Admin" asp-controller="Bills" asp-action="Details" asp-route-id="@bill.Id">Open</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @await Html.PartialAsync("_Pager", new PagerViewModel
+    {
+        Page = page,
+        TotalPages = totalPages,
+        TotalRows = totalRows,
+        RouteValues = new Dictionary<string, string?>
+        {
+            ["search"] = currentSearch,
+            ["status"] = currentStatus,
+            ["type"] = currentType
+        }
+    })
+}

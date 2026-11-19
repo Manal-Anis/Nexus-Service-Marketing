@@ -1,0 +1,143 @@
+@model Connection
+@{
+    ViewData["Title"] = Model.AccountId;
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="glass p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <div class="eyebrow">Connection</div>
+                    <h2 class="h4 mb-1"><span class="account-id-chip">@Model.AccountId</span></h2>
+                    <p class="text-muted-silver fs-14 mb-0">@Model.Customer?.FullName - @Model.Plan?.Name</p>
+                </div>
+                @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(Model.Status))
+            </div>
+
+            <div class="stat-line"><span class="k">Order</span><span class="v">@(Model.Order?.OrderId ?? "-")</span></div>
+            <div class="stat-line"><span class="k">Partner</span><span class="v">@(Model.Vendor?.BusinessName ?? "-")</span></div>
+            <div class="stat-line"><span class="k">City</span><span class="v">@(Model.City?.Name ?? "-")</span></div>
+            <div class="stat-line"><span class="k">Installed at</span><span class="v">@(Model.InstallationAddress ?? "-")</span></div>
+            <div class="stat-line"><span class="k">Contact</span><span class="v">@(Model.ContactNumber ?? "-")</span></div>
+            <div class="stat-line"><span class="k">Activated</span><span class="v">@Model.ActivationDate.ToString("dd MMM yyyy")</span></div>
+            <div class="stat-line stat-total"><span class="k">Monthly charge</span><span class="v text-gold">@Model.MonthlyCharge.ToString("N2") Rs</span></div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.StatusReason))
+            {
+                <p class="text-muted-silver fs-14 mt-3 mb-0">
+                    <i class="bi bi-info-circle me-1"></i>@Model.StatusReason
+                    @if (Model.StatusChangedAt.HasValue)
+                    {
+                        <span>(@Model.StatusChangedAt.Value.ToString("dd MMM yyyy"))</span>
+                    }
+                </p>
+            }
+        </div>
+
+        <div class="glass p-4 mb-4">
+            <h3 class="h6 mb-3">The bills of the connection</h3>
+            @if (Model.Bills.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No bill was raised for this connection yet.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr><th>Bill</th><th>Type</th><th>Period</th><th class="num">Total</th><th class="num">Due</th><th>State</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var bill in Model.Bills)
+                            {
+                                <tr>
+                                    <td><span class="order-id-chip">@bill.BillNumber</span></td>
+                                    <td class="fs-14 text-muted-silver">@bill.BillType.ToDisplayName()</td>
+                                    <td class="fs-14">@bill.PeriodStart.ToString("dd MMM") - @bill.PeriodEnd.ToString("dd MMM yyyy")</td>
+                                    <td class="num text-silver">@bill.TotalAmount.ToString("N2")</td>
+                                    <td class="num text-muted-silver">@bill.AmountDue.ToString("N2")</td>
+                                    <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(bill.Status))</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="glass p-4">
+            <h3 class="h6 mb-3">The issued devices</h3>
+            @if (Model.Equipment.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No device was issued on this connection.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr><th>Device</th><th>Serial number</th><th>Issued</th><th>State</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var equipment in Model.Equipment)
+                            {
+                                <tr>
+                                    <td class="text-silver">@(equipment.Product?.Name ?? "-")</td>
+                                    <td class="fs-14 text-muted-silver">@(equipment.SerialNumber ?? "-")</td>
+                                    <td class="fs-14">@equipment.AssignedAt.ToString("dd MMM yyyy")</td>
+                                    <td>
+                                        @if (equipment.IsReplaced)
+                                        {
+                                            <span class="badge-status badge-danger">Replaced</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge-status badge-success">In use</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="glass p-4 mb-4">
+            <h3 class="h6 mb-3">The plan changes</h3>
+            @if (Model.PlanChanges.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">The plan of this connection was never changed.</p>
+            }
+            else
+            {
+                <ul class="timeline">
+                    @foreach (var change in Model.PlanChanges.OrderBy(c => c.RequestedAt))
+                    {
+                        <li class="timeline-item">
+                            <span class="timeline-dot done"></span>
+                            <div class="timeline-title">@(change.OldPlan?.Name ?? "-") to @(change.NewPlan?.Name ?? "-")</div>
+                            <div class="timeline-meta">@change.RequestedAt.ToString("dd MMM yyyy HH:mm") - @change.Status.ToDisplayName()</div>
+                            @if (!string.IsNullOrWhiteSpace(change.Reason))
+                            {
+                                <div class="text-muted-silver fs-14">@change.Reason</div>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+
+        <div class="glass p-4">
+            <h3 class="h6 mb-3">The security deposit</h3>
+            <div class="stat-line"><span class="k">Held amount</span><span class="v">@Model.SecurityDeposit.ToString("N2") Rs</span></div>
+            <p class="text-muted-silver fs-14 mt-2 mb-0">
+                The deposit is held against the connection and it is refunded when the connection is
+                closed.
+            </p>
+        </div>
+    </div>
+</div>

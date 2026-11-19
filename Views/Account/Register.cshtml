@@ -1,0 +1,87 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Create an account";
+    var cities = ViewBag.Cities as List<City> ?? new List<City>();
+}
+
+<section class="container py-5">
+    <div class="auth-card auth-card-wide glass mx-auto" data-reveal>
+        <div class="text-center mb-4">
+            <span class="brand-mark mx-auto mb-3" style="width:54px;height:54px;font-size:1.4rem;"><i class="bi bi-person-plus-fill"></i></span>
+            <h1 class="h4 mb-1">Create your Nexus account</h1>
+            <p class="text-muted-silver fs-14 mb-0">One account for your orders, connections, invoices and receipts.</p>
+        </div>
+
+        <partial name="_AuthSwitch" model='"customer"' />
+
+        <form method="post" asp-controller="Account" asp-action="Register">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="FullName">Full name</label>
+                    <input asp-for="FullName" class="form-control" autocomplete="name" />
+                    <span asp-validation-for="FullName" class="text-danger fs-14"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Email">Email address</label>
+                    <input asp-for="Email" class="form-control" autocomplete="username" />
+                    <span asp-validation-for="Email" class="text-danger fs-14"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Phone">Phone number</label>
+                    <input asp-for="Phone" class="form-control" autocomplete="tel" />
+                    <span asp-validation-for="Phone" class="text-danger fs-14"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="CityId">City</label>
+                    <select asp-for="CityId" class="form-select" asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(cities, "Id", "Name"))">
+                        <option value="">Choose a city</option>
+                    </select>
+                    <span asp-validation-for="CityId" class="text-danger fs-14"></span>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" asp-for="Address">Installation address</label>
+                    <input asp-for="Address" class="form-control" autocomplete="street-address" />
+                    <span asp-validation-for="Address" class="text-danger fs-14"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Password">Password</label>
+                    <div class="password-wrapper">
+                        <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                        <button type="button" class="password-toggle" aria-label="Show the password"><i class="bi bi-eye"></i></button>
+                    </div>
+                    <small class="text-muted-silver">At least 8 characters with a digit, a capital and a small letter.</small>
+                    <span asp-validation-for="Password" class="text-danger fs-14"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="ConfirmPassword">Repeat the password</label>
+                    <div class="password-wrapper">
+                        <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                        <button type="button" class="password-toggle" aria-label="Show the password"><i class="bi bi-eye"></i></button>
+                    </div>
+                    <span asp-validation-for="ConfirmPassword" class="text-danger fs-14"></span>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" asp-for="AcceptedTerms" type="checkbox" />
+                        <label class="form-check-label text-muted-silver fs-14" asp-for="AcceptedTerms">
+                            I accept the terms of service and the privacy policy of Nexus.
+                        </label>
+                    </div>
+                    <span asp-validation-for="AcceptedTerms" class="text-danger fs-14"></span>
+                </div>
+                <div class="col-12 d-grid">
+                    <button type="submit" class="btn btn-gold btn-lg">Create the account</button>
+                </div>
+            </div>
+        </form>
+
+        <hr class="divider-gold my-4" />
+
+        <p class="text-center text-muted-silver fs-14 mb-0">
+            Already registered? <a asp-controller="Account" asp-action="Login">Sign in</a>
+            &middot; Own a shop? <a asp-controller="Account" asp-action="RegisterVendor">Join as a partner</a>
+        </p>
+    </div>
+</section>

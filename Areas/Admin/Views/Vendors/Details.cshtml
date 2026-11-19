@@ -1,0 +1,171 @@
+@model Vendor
+@{
+    ViewData["Title"] = Model.BusinessName;
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4"><i class="bi bi-check-circle-fill"></i><div>@success</div></div>
+}
+@if (TempData["Credentials"] is string credentials && !string.IsNullOrWhiteSpace(credentials))
+{
+    <div class="alert-nexus alert-success mb-4"><i class="bi bi-key-fill"></i><div><strong>Login details (shown once):</strong> @credentials</div></div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4"><i class="bi bi-x-circle-fill"></i><div>@error</div></div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="glass p-4 mb-4">
+            <div class="eyebrow">Service partner</div>
+            <h2 class="h4 mb-3">@Model.BusinessName</h2>
+
+            <div class="stat-line"><span class="k">Owner</span><span class="v">@(Model.OwnerName ?? "-")</span></div>
+            <div class="stat-line"><span class="k">City</span><span class="v">@(Model.City?.Name ?? "-")</span></div>
+            <div class="stat-line"><span class="k">Phone</span><span class="v">@(Model.Phone ?? "-")</span></div>
+            <div class="stat-line"><span class="k">Email</span><span class="v">@(Model.Email ?? "-")</span></div>
+            <div class="stat-line"><span class="k">Address</span><span class="v">@(Model.Address ?? "-")</span></div>
+            <div class="stat-line stat-total"><span class="k">State</span><span class="v">@Model.Status.ToDisplayName()</span></div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.StatusRemarks))
+            {
+                <p class="text-muted-silver fs-14 mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>@Model.StatusRemarks</p>
+            }
+        </div>
+
+        <div class="glass p-4">
+            <h3 class="h6 mb-3">The actions</h3>
+            <div class="d-grid gap-2">
+                <a class="btn btn-gold" asp-area="Admin" asp-controller="Vendors" asp-action="Edit" asp-route-id="@Model.Id">
+                    <i class="bi bi-pencil me-1"></i>Edit the master data
+                </a>
+
+                @if (Model.Status == VendorStatus.Pending)
+                {
+                    <form method="post" asp-area="Admin" asp-controller="Vendors" asp-action="Approve" asp-route-id="@Model.Id">
+                        <button class="btn btn-outline-gold w-100" type="submit"><i class="bi bi-check2-circle me-1"></i>Approve the partner</button>
+                    </form>
+                    <form method="post" asp-area="Admin" asp-controller="Vendors" asp-action="Reject" asp-route-id="@Model.Id">
+                        <input type="hidden" name="reason" value="The documents of the partner were incomplete." />
+                        <button class="btn btn-danger-soft w-100" type="submit"><i class="bi bi-x-circle me-1"></i>Reject the registration</button>
+                    </form>
+                }
+
+                @if (Model.Status == VendorStatus.Approved)
+                {
+                    <form method="post" asp-area="Admin" asp-controller="Vendors" asp-action="ToggleBlock" asp-route-id="@Model.Id"
+                          data-confirm="Block @Model.BusinessName? The partner cannot sign in anymore.">
+                        <button class="btn btn-danger-soft w-100" type="submit"><i class="bi bi-slash-circle me-1"></i>Block the partner</button>
+                    </form>
+                }
+
+                @if (Model.Status == VendorStatus.Blocked)
+                {
+                    <form method="post" asp-area="Admin" asp-controller="Vendors" asp-action="ToggleBlock" asp-route-id="@Model.Id">
+                        <button class="btn btn-outline-gold w-100" type="submit"><i class="bi bi-unlock me-1"></i>Unblock the partner</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="glass p-4 mb-4">
+            <h3 class="h6 mb-3">The retail counters</h3>
+            @if (Model.RetailShops.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">This partner has no retail counter yet.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr><th>Shop</th><th>Contact person</th><th>Phone</th><th>City</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var shop in Model.RetailShops)
+                            {
+                                <tr>
+                                    <td class="text-silver">@shop.Name</td>
+                                    <td class="fs-14">@(shop.ContactPerson ?? "-")</td>
+                                    <td class="fs-14 text-muted-silver">@(shop.Phone ?? "-")</td>
+                                    <td class="fs-14 text-muted-silver">@(shop.City?.Name ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="glass p-4 mb-4">
+            <h3 class="h6 mb-3">The employees</h3>
+            @if (Model.Employees.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">This partner has no employee yet.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr><th>Name</th><th>Department</th><th>Designation</th><th>Active</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var employee in Model.Employees)
+                            {
+                                <tr>
+                                    <td class="text-silver">@(employee.User?.FullName ?? "-")</td>
+                                    <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(employee.EmployeeType))</td>
+                                    <td class="fs-14 text-muted-silver">@(employee.Designation ?? "-")</td>
+                                    <td>
+                                        @if (employee.IsActive)
+                                        {
+                                            <span class="badge-status badge-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge-status badge-muted">Inactive</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="glass p-4">
+            <h3 class="h6 mb-3">The orders of the partner</h3>
+            @if (Model.Orders.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">This partner has not received an order yet.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr><th>Order id</th><th>Placed</th><th>Status</th><th class="num">Total</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model.Orders)
+                            {
+                                <tr>
+                                    <td><span class="order-id-chip">@order.OrderId</span></td>
+                                    <td class="fs-14">@order.PlacedAt.ToString("dd MMM yyyy")</td>
+                                    <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(order.Status))</td>
+                                    <td class="num text-silver">@order.TotalAmount.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

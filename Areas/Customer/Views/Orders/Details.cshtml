@@ -1,0 +1,157 @@
+@model Order
+@{
+    ViewData["Title"] = $"Order {Model.OrderId}";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <span class="order-id-chip fs-6">@Model.OrderId</span>
+        @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(Model.Status))
+    </div>
+    <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Orders" asp-action="Index">
+        <i class="bi bi-arrow-left me-1"></i>Back to my orders
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <!-- ------------------------------------------------------------- timeline -->
+        <div class="glass p-4 mb-4">
+            <h2 class="h5 mb-4">Progress</h2>
+            <ul class="timeline">
+                @foreach (var history in Model.StatusHistory.OrderBy(h => h.ChangedAt))
+                {
+                    <li class="timeline-item">
+                        <span class="timeline-dot @(history.ToStatus is OrderStatus.NotFeasible or OrderStatus.Cancelled ? "fail" : "done")"></span>
+                        <div class="timeline-title">@history.ToStatus.ToDisplayName()</div>
+                        <div class="timeline-meta">@history.ChangedAt.ToString("dd MMM yyyy, hh:mm tt") @(string.IsNullOrWhiteSpace(history.ChangedByName) ? "" : "- " + history.ChangedByName)</div>
+                        @if (!string.IsNullOrWhiteSpace(history.Remark))
+                        {
+                            <div class="text-muted-silver fs-14">@history.Remark</div>
+                        }
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <!-- ------------------------------------------------------------- feasibility -->
+        @if (Model.FeasibilityChecks.Count > 0)
+        {
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">Feasibility checks</h2>
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Check</th>
+                                <th>Result</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var check in Model.FeasibilityChecks)
+                            {
+                                <tr>
+                                    <td class="text-silver">@check.CheckType.ToDisplayName()</td>
+                                    <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(check.Result))</td>
+                                    <td class="text-muted-silver fs-14">
+                                        @check.Remarks
+                                        @if (!string.IsNullOrWhiteSpace(check.DistanceParameters))
+                                        {
+                                            <div class="mt-1"><i class="bi bi-rulers"></i> @check.DistanceParameters</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(check.ServerAvailability))
+                                        {
+                                            <div><i class="bi bi-hdd-network"></i> @check.ServerAvailability</div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- ------------------------------------------------------------- documents -->
+        @if (Model.Documents.Count > 0)
+        {
+            <div class="glass p-4">
+                <h2 class="h5 mb-3">Uploaded documents</h2>
+                <div class="d-grid gap-2">
+                    @foreach (var document in Model.Documents)
+                    {
+                        <div class="doc-tile">
+                            <span class="icon"><i class="bi bi-file-earmark-text"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600 fs-14">@document.OriginalFileName</div>
+                                <small class="text-muted-silver">@document.DocumentType - @((document.FileSizeBytes / 1024.0).ToString("0")) KB</small>
+                            </div>
+                            <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Documents" asp-action="Download" asp-route-id="@document.Id">
+                                <i class="bi bi-download"></i>
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-5">
+        <!-- ------------------------------------------------------------- summary -->
+        <div class="glass p-4 mb-4">
+            <h2 class="h5 mb-3">Order summary</h2>
+
+            <div class="stat-line"><span class="k">Plan</span><span class="v">@Model.Plan?.Name</span></div>
+            <div class="stat-line"><span class="k">Service</span><span class="v">@Model.Plan?.Category?.Name</span></div>
+            <div class="stat-line"><span class="k">Connections</span><span class="v">@Model.Quantity</span></div>
+            <div class="stat-line"><span class="k">Partner</span><span class="v">@Model.Vendor?.BusinessName</span></div>
+            <div class="stat-line"><span class="k">City</span><span class="v">@Model.City?.Name</span></div>
+            <div class="stat-line"><span class="k">Address</span><span class="v">@Model.InstallationAddress</span></div>
+            <div class="stat-line"><span class="k">Contact</span><span class="v">@Model.ContactNumber</span></div>
+            <div class="stat-line"><span class="k">Placed</span><span class="v">@Model.PlacedAt.ToString("dd MMM yyyy")</span></div>
+            @if (Model.RequiresLandline)
+            {
+                <div class="stat-line"><span class="k">Landline</span><span class="v text-gold">New line requested</span></div>
+            }
+            else if (!string.IsNullOrWhiteSpace(Model.ExistingLandlineAccountId))
+            {
+                <div class="stat-line"><span class="k">Landline</span><span class="v">@Model.ExistingLandlineAccountId</span></div>
+            }
+        </div>
+
+        <!-- ------------------------------------------------------------- money -->
+        <div class="glass p-4 mb-4">
+            <h2 class="h5 mb-3">Activation invoice</h2>
+
+            <div class="stat-line"><span class="k">Security deposit</span><span class="v">@Model.SecurityDepositAmount.ToString("N2")</span></div>
+            <div class="stat-line"><span class="k">Advance payment</span><span class="v">@Model.AdvanceAmount.ToString("N2")</span></div>
+            @if (Model.DiscountPercent > 0)
+            {
+                <div class="stat-line"><span class="k">Bulk discount</span><span class="v text-gold">@Model.DiscountPercent.ToString("0")%</span></div>
+                <div class="stat-line"><span class="k">Deposit payable</span><span class="v">@Model.SecurityDepositPayable.ToString("N2")</span></div>
+                <div class="stat-line"><span class="k">Advance payable</span><span class="v">@Model.AdvancePayable.ToString("N2")</span></div>
+            }
+            <div class="stat-line"><span class="k">Equipment</span><span class="v">@Model.EquipmentAmount.ToString("N2")</span></div>
+            <div class="stat-line"><span class="k">Tax (@Model.TaxPercent.ToString("0.##")%)</span><span class="v">@Model.TaxAmount.ToString("N2")</span></div>
+            <div class="stat-line"><span class="k">Total</span><span class="v text-gold fs-5">@Model.TotalAmount.ToString("N2")</span></div>
+        </div>
+
+        @if (Model.Connections.Any())
+        {
+            <div class="glass p-4">
+                <h2 class="h5 mb-3">Connection</h2>
+                @foreach (var connection in Model.Connections)
+                {
+                    <div class="d-flex justify-content-between align-items-center gap-3">
+                        <span class="account-id-chip">@connection.AccountId</span>
+                        @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(connection.Status))
+                    </div>
+                }
+                <a class="btn btn-ghost w-100 mt-3" asp-area="Customer" asp-controller="Connections" asp-action="Index">
+                    Open the connection
+                </a>
+            </div>
+        }
+    </div>
+</div>

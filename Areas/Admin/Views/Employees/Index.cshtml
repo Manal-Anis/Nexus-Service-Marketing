@@ -1,0 +1,118 @@
+@model List<Employee>
+@{
+    ViewData["Title"] = "Employees";
+    var vendors = ViewData["Vendors"] as List<Vendor> ?? new List<Vendor>();
+    var currentVendorId = ViewData["CurrentVendorId"] as int?;
+    var currentType = ViewData["CurrentType"] as EmployeeType?;
+    var currentSearch = ViewData["CurrentSearch"] as string;
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4"><i class="bi bi-check-circle-fill"></i><div>@success</div></div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4"><i class="bi bi-x-circle-fill"></i><div>@error</div></div>
+}
+
+<div class="glass p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <span class="kpi-label me-2">Department</span>
+        <a class="btn btn-sm @(currentType is null ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Employees" asp-action="Index">All</a>
+        @foreach (var type in Enum.GetValues<EmployeeType>())
+        {
+            <a class="btn btn-sm @(currentType == type ? "btn-gold" : "btn-ghost")"
+               asp-area="Admin" asp-controller="Employees" asp-action="Index" asp-route-type="@type">@type.ToDisplayName()</a>
+        }
+    </div>
+
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <input type="hidden" name="type" value="@currentType" />
+        <select name="vendorId" class="form-select" style="max-width:260px">
+            <option value="">Every partner</option>
+            @foreach (var vendor in vendors)
+            {
+                <option value="@vendor.Id" selected="@(currentVendorId == vendor.Id)">@vendor.BusinessName</option>
+            }
+        </select>
+        <input class="form-control" style="max-width:280px" type="search" name="search" value="@currentSearch"
+               placeholder="Name or designation" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+        <a class="btn btn-gold ms-auto" asp-area="Admin" asp-controller="Employees" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i>Register an employee
+        </a>
+    </form>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <circle cx="100" cy="62" r="26" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M56 132c6-24 24-34 44-34s38 10 44 34" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No employee in this view</div>
+        <p class="text">No employee of the network matches the current filter.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Partner</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th>Contact</th>
+                    <th>Joined</th>
+                    <th>State</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var employee in Model)
+                {
+                    <tr>
+                        <td class="text-silver fw-600">@(employee.User?.FullName ?? "-")</td>
+                        <td class="fs-14">@(employee.Vendor?.BusinessName ?? "-")</td>
+                        <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(employee.EmployeeType))</td>
+                        <td class="fs-14 text-muted-silver">@(employee.Designation ?? "-")</td>
+                        <td class="fs-14 text-muted-silver">
+                            @(employee.User?.Email ?? "-")
+                            @if (!string.IsNullOrWhiteSpace(employee.Phone))
+                            {
+                                <div>@employee.Phone</div>
+                            }
+                        </td>
+                        <td class="fs-14">@employee.JoiningDate.ToString("dd MMM yyyy")</td>
+                        <td>
+                            @if (employee.IsActive)
+                            {
+                                <span class="badge-status badge-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge-status badge-muted">Inactive</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <a class="btn btn-ghost btn-sm" asp-area="Admin" asp-controller="Employees" asp-action="Edit" asp-route-id="@employee.Id">Edit</a>
+                                <form method="post" asp-area="Admin" asp-controller="Employees" asp-action="ToggleActive" asp-route-id="@employee.Id"
+                                      data-confirm="@(employee.IsActive ? "Deactivate this employee? He cannot sign in anymore." : "Activate this employee again?")">
+                                    <button class="btn btn-ghost btn-sm" type="submit" title="Switch the employee on or off">
+                                        <i class="bi @(employee.IsActive ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

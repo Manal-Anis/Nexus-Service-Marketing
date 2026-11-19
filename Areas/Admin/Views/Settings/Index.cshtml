@@ -1,0 +1,182 @@
+@model SettingsFormViewModel
+@{
+    ViewData["Title"] = "Settings";
+    var categories = ViewData["Categories"] as List<ServiceCategory> ?? new List<ServiceCategory>();
+    var discountRules = ViewData["DiscountRules"] as List<DiscountRule> ?? new List<DiscountRule>();
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4"><i class="bi bi-check-circle-fill"></i><div>@success</div></div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4"><i class="bi bi-x-circle-fill"></i><div>@error</div></div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <!-- ------------------------------------------------ general settings -->
+        <div class="glass p-4 mb-4">
+            <h2 class="h5 mb-3">The general settings</h2>
+
+            <form method="post" asp-area="Admin" asp-controller="Settings" asp-action="Update">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="TaxPercent"></label>
+                        <input asp-for="TaxPercent" class="form-control" type="number" step="0.01" min="0" max="100" />
+                        <span asp-validation-for="TaxPercent" class="text-danger fs-14"></span>
+                        <small class="text-muted-silver fs-14">The tax is added to the whole bill after the discount.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Currency"></label>
+                        <input asp-for="Currency" class="form-control" maxlength="10" />
+                        <span asp-validation-for="Currency" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="OverdueDays"></label>
+                        <input asp-for="OverdueDays" class="form-control" type="number" min="1" max="365" />
+                        <span asp-validation-for="OverdueDays" class="text-danger fs-14"></span>
+                        <small class="text-muted-silver fs-14">A connection is suspended when a bill stays unpaid for this many days.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="PaymentGraceDays"></label>
+                        <input asp-for="PaymentGraceDays" class="form-control" type="number" min="0" max="365" />
+                        <span asp-validation-for="PaymentGraceDays" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="SupportPhone"></label>
+                        <input asp-for="SupportPhone" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="SupportEmail"></label>
+                        <input asp-for="SupportEmail" class="form-control" type="email" />
+                        <span asp-validation-for="SupportEmail" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="CompanyAddress"></label>
+                        <textarea asp-for="CompanyAddress" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <button class="btn btn-gold mt-3" type="submit"><i class="bi bi-check2-circle me-1"></i>Save the settings</button>
+            </form>
+        </div>
+
+        <!-- ------------------------------------------------ security deposits -->
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">The security deposits</h2>
+            <p class="text-muted-silver fs-14">
+                The deposit is held against the connection and it is refunded when the connection is
+                closed. The bulk discount is applied on the deposit.
+            </p>
+
+            <div class="d-grid gap-3">
+                @foreach (var category in categories)
+                {
+                    <form method="post" asp-area="Admin" asp-controller="Settings" asp-action="UpdateDeposit" class="d-flex flex-wrap gap-2 align-items-end">
+                        <input type="hidden" name="CategoryId" value="@category.Id" />
+                        <div style="min-width:190px">
+                            <label class="form-label" for="deposit-@category.Id">@category.Name</label>
+                            <input id="deposit-@category.Id" name="SecurityDeposit" class="form-control" type="number" step="0.01" min="0"
+                                   value="@category.SecurityDeposit.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                        </div>
+                        <button class="btn btn-outline-gold btn-sm" type="submit">Save</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <!-- ------------------------------------------------ discount tiers -->
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">The bulk discount tiers</h2>
+            <p class="text-muted-silver fs-14">
+                The discount is applied on the advance payment and on the security deposit of an
+                order that asks for several connections.
+            </p>
+
+            <div class="table-wrap mb-3">
+                <table class="table-glass">
+                    <thead>
+                        <tr>
+                            <th>Connections</th>
+                            <th class="num">Discount</th>
+                            <th>Description</th>
+                            <th>State</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rule in discountRules)
+                        {
+                            <tr>
+                                <td class="text-silver">@rule.MinConnections - @(rule.MaxConnections?.ToString() ?? "and more")</td>
+                                <td class="num text-gold">@rule.DiscountPercent.ToString("N0") %</td>
+                                <td class="fs-14 text-muted-silver">@(rule.Description ?? "-")</td>
+                                <td>
+                                    @if (rule.IsActive)
+                                    {
+                                        <span class="badge-status badge-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-status badge-muted">Inactive</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <form method="post" asp-area="Admin" asp-controller="Settings" asp-action="ToggleDiscountRule" asp-route-id="@rule.Id">
+                                            <button class="btn btn-ghost btn-sm" type="submit" title="Switch the tier on or off">
+                                                <i class="bi bi-toggle-@(rule.IsActive ? "on" : "off")"></i>
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-area="Admin" asp-controller="Settings" asp-action="DeleteDiscountRule" asp-route-id="@rule.Id"
+                                              data-confirm="Delete this discount tier?">
+                                            <button class="btn btn-ghost btn-sm" type="submit" title="Delete the tier">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="h6 mb-2">Add a tier</h3>
+            <form method="post" asp-area="Admin" asp-controller="Settings" asp-action="AddDiscountRule">
+                <div class="row g-2">
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="MinConnections">From</label>
+                        <input id="MinConnections" name="MinConnections" class="form-control" type="number" min="1" value="10" />
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="MaxConnections">To</label>
+                        <input id="MaxConnections" name="MaxConnections" class="form-control" type="number" min="1" value="15" />
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="DiscountPercent">Discount %</label>
+                        <input id="DiscountPercent" name="DiscountPercent" class="form-control" type="number" step="1" min="0" max="100" value="25" />
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="IsActive">Active</label>
+                        <div class="form-check mt-2">
+                            <input id="IsActive" name="IsActive" class="form-check-input" type="checkbox" value="true" checked />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="Description">Description</label>
+                        <input id="Description" name="Description" class="form-control" placeholder="Bulk order of ten to fifteen connections" />
+                    </div>
+                </div>
+
+                <button class="btn btn-gold mt-3" type="submit"><i class="bi bi-plus-lg me-1"></i>Add the tier</button>
+            </form>
+        </div>
+    </div>
+</div>

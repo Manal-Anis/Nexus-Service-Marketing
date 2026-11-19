@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="NexusServiceMarketingSystem.csproj" />
+  <Project Path="tests/NexusServiceMarketingSystem.Tests/NexusServiceMarketingSystem.Tests.csproj" />
+</Solution>

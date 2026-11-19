@@ -1,0 +1,149 @@
+@model VendorEquipmentViewModel
+@{
+    ViewData["Title"] = "Equipment";
+    var currentSearch = ViewData["CurrentSearch"] as string;
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-box-seam"></i></span>
+            <div class="kpi-label">Units in stock</div>
+            <div class="kpi-value">@Model.TotalUnits</div>
+            <div class="kpi-delta">across @Model.Products.Count product(s)</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-router"></i></span>
+            <div class="kpi-label">Issued devices</div>
+            <div class="kpi-value">@Model.AssignedUnits</div>
+            <div class="kpi-delta">on your connections</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></span>
+            <div class="kpi-label">Low stock</div>
+            <div class="kpi-value">@Model.LowStockCount</div>
+            <div class="kpi-delta">at or below the reorder level</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-x-octagon"></i></span>
+            <div class="kpi-label">Out of stock</div>
+            <div class="kpi-value">@Model.OutOfStockCount</div>
+            <div class="kpi-delta">the administrator has to order</div>
+        </div>
+    </div>
+</div>
+
+<div class="glass p-3 mb-4">
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <input class="form-control" style="max-width:320px" type="search" name="search" value="@currentSearch"
+               placeholder="Product name or type" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+        @if (!string.IsNullOrWhiteSpace(currentSearch))
+        {
+            <a class="btn btn-ghost" asp-area="Vendor" asp-controller="Equipment" asp-action="Index">Clear</a>
+        }
+    </form>
+</div>
+
+<div class="row g-4">
+    <!-- ------------------------------------------------------------- stock -->
+    <div class="col-xl-7">
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">The stock</h2>
+
+            @if (Model.Products.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No product is available in the stock.</p>
+            }
+            else
+            {
+                <div class="table-wrap table-wrap-lg">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Type</th>
+                                <th>Supplier</th>
+                                <th class="num">Price</th>
+                                <th class="num">Stock</th>
+                                <th class="num">Reorder</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var product in Model.Products)
+                            {
+                                <tr>
+                                    <td class="text-silver fw-600">
+                                        <i class="bi @product.Icon me-1"></i>@product.Name
+                                    </td>
+                                    <td class="fs-14 text-muted-silver">@product.Type</td>
+                                    <td class="fs-14 text-muted-silver">@product.Supplier?.Name</td>
+                                    <td class="num text-silver">@product.Price.ToString("N0")</td>
+                                    <td class="num">
+                                        @if (product.StockQuantity <= 0)
+                                        {
+                                            <span class="text-danger-silver fw-600">0</span>
+                                        }
+                                        else if (product.StockQuantity <= product.ReorderLevel)
+                                        {
+                                            <span class="text-warning-silver fw-600">@product.StockQuantity</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-silver">@product.StockQuantity</span>
+                                        }
+                                    </td>
+                                    <td class="num fs-14 text-muted-silver">@product.ReorderLevel</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------- issued -->
+    <div class="col-xl-5">
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">Issued devices</h2>
+
+            @if (Model.Assignments.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No device has been issued on your connections yet.</p>
+            }
+            else
+            {
+                <div class="d-grid gap-2">
+                    @foreach (var device in Model.Assignments)
+                    {
+                        <div class="doc-tile">
+                            <span class="icon"><i class="bi bi-router"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600 fs-14">@device.Product?.Name</div>
+                                <small class="text-muted-silver">
+                                    @device.Connection?.AccountId - @device.Connection?.Customer?.FullName
+                                    <br />Serial @device.SerialNumber - issued @device.AssignedAt.ToString("dd MMM yyyy")
+                                </small>
+                            </div>
+                            @if (device.IsReplaced)
+                            {
+                                <span class="badge-status badge-danger">Replaced</span>
+                            }
+                            else
+                            {
+                                <span class="badge-status badge-success">Active</span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

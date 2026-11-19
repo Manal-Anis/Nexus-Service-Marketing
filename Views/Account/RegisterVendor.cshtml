@@ -1,0 +1,111 @@
+@model VendorRegistrationViewModel
+@{
+    ViewData["Title"] = "Become a Nexus partner";
+    var cities = ViewBag.Cities as List<City> ?? new List<City>();
+}
+
+<section class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="text-center mb-4" data-reveal>
+                <span class="eyebrow">Partner network</span>
+                <h1 class="section-title mt-2">Become a Nexus retail partner</h1>
+                <p class="section-lead mx-auto mt-2">
+                    Send your registration request with the password of your future login. The administrator reviews
+                    every request, and you can sign in to your partner dashboard as soon as it is approved.
+                </p>
+            </div>
+
+            <div style="max-width:520px" class="mx-auto">
+                <partial name="_AuthSwitch" model='"partner"' />
+            </div>
+
+            @if (Model.Submitted)
+            {
+                <div class="glass p-4 p-lg-5 text-center" data-reveal>
+                    <span class="brand-mark mx-auto mb-3" style="width:58px;height:58px;font-size:1.5rem;"><i class="bi bi-send-check-fill"></i></span>
+                    <h2 class="h5">Request received</h2>
+                    <p class="text-muted-silver">
+                        Thank you, <strong>@Model.BusinessName</strong>. The administrator will review your request
+                        and approve your business. After the approval you can sign in with
+                        <strong>@Model.Email</strong> and the password that you just chose, to run the orders,
+                        the feasibility survey and the bills of your shop.
+                    </p>
+                    <div class="d-flex flex-wrap justify-content-center gap-3 mt-2">
+                        <a class="btn btn-gold" asp-controller="Account" asp-action="Login">Go to the sign in</a>
+                        <a class="btn btn-outline-gold" asp-controller="Home" asp-action="Index">Back to the home page</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <form method="post" asp-controller="Account" asp-action="RegisterVendor" class="glass p-4 p-lg-5" data-reveal="80">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="BusinessName">Business name</label>
+                            <input asp-for="BusinessName" class="form-control" />
+                            <span asp-validation-for="BusinessName" class="text-danger fs-14"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="OwnerName">Owner name</label>
+                            <input asp-for="OwnerName" class="form-control" />
+                            <span asp-validation-for="OwnerName" class="text-danger fs-14"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="Phone">Phone number</label>
+                            <input asp-for="Phone" class="form-control" />
+                            <span asp-validation-for="Phone" class="text-danger fs-14"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="Email">Email address</label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger fs-14"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="CityId">City</label>
+                            <select asp-for="CityId" class="form-select" asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(cities, "Id", "Name"))">
+                                <option value="">Choose a city</option>
+                            </select>
+                            <span asp-validation-for="CityId" class="text-danger fs-14"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="Address">Business address</label>
+                            <input asp-for="Address" class="form-control" />
+                            <span asp-validation-for="Address" class="text-danger fs-14"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="Password">Password</label>
+                            <div class="password-wrapper">
+                                <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                                <button type="button" class="password-toggle" aria-label="Show the password"><i class="bi bi-eye"></i></button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger fs-14"></span>
+                            <div class="form-text text-muted-silver">At least 8 characters with upper and lower case letters, a digit and a symbol.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="ConfirmPassword">Confirm password</label>
+                            <div class="password-wrapper">
+                                <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                                <button type="button" class="password-toggle" aria-label="Show the password"><i class="bi bi-eye"></i></button>
+                            </div>
+                            <span asp-validation-for="ConfirmPassword" class="text-danger fs-14"></span>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" asp-for="Details">Business details</label>
+                            <textarea asp-for="Details" class="form-control" rows="4" placeholder="How many shops do you run, which area do you cover, which services do you install?"></textarea>
+                            <span asp-validation-for="Details" class="text-danger fs-14"></span>
+                        </div>
+                        <div class="col-12 d-grid">
+                            <button type="submit" class="btn btn-gold btn-lg">Send the registration request</button>
+                        </div>
+                        <div class="col-12 text-center text-muted-silver fs-14">
+                            Already approved? <a asp-controller="Account" asp-action="Login">Sign in</a>
+                        </div>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+</section>

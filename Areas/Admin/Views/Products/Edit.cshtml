@@ -1,0 +1,73 @@
+@model ProductFormViewModel
+@{
+    ViewData["Title"] = $"Edit {Model.Name}";
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" asp-area="Admin" asp-controller="Products" asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The device</h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Name"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Type"></label>
+                        <input asp-for="Type" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="Price"></label>
+                        <input asp-for="Price" class="form-control" type="number" step="0.01" min="0" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="ReplacementCharge"></label>
+                        <input asp-for="ReplacementCharge" class="form-control" type="number" step="0.01" min="0" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="SupplierId"></label>
+                        <select asp-for="SupplierId" asp-items="@(Model.Suppliers.Select(s => new SelectListItem { Text = s.Name, Value = s.Id.ToString() }))" class="form-select">
+                            <option value="">Without a supplier</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="StockQuantity"></label>
+                        <input asp-for="StockQuantity" class="form-control" type="number" min="0" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="ReorderLevel"></label>
+                        <input asp-for="ReorderLevel" class="form-control" type="number" min="0" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="Description"></label>
+                        <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label" asp-for="IsActive">The device is part of the offer</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-gold" type="submit"><i class="bi bi-check2-circle me-1"></i>Save the changes</button>
+            <a class="btn btn-ghost" asp-area="Admin" asp-controller="Products" asp-action="Index">Cancel</a>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass p-4">
+            <h2 class="h6 mb-3">Note</h2>
+            <p class="text-muted-silver fs-14 mb-0">
+                The stock of the store room is changed by the purchase orders. A manual change is
+                written into the audit log.
+            </p>
+        </div>
+    </div>
+</div>

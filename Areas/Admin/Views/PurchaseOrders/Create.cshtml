@@ -1,0 +1,91 @@
+@model PurchaseOrderFormViewModel
+@{
+    ViewData["Title"] = "Raise a purchase order";
+    var lines = Model.Items.Count >= 5 ? Model.Items.Count : 5;
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" asp-area="Admin" asp-controller="PurchaseOrders" asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The order</h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="SupplierId"></label>
+                        <select asp-for="SupplierId" asp-items="@(Model.Suppliers.Select(s => new SelectListItem { Text = s.Name, Value = s.Id.ToString() }))" class="form-select">
+                            <option value="">Select a supplier</option>
+                        </select>
+                        <span asp-validation-for="SupplierId" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" asp-for="OrderDate"></label>
+                        <input asp-for="OrderDate" class="form-control" type="date" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" asp-for="ExpectedDate"></label>
+                        <input asp-for="ExpectedDate" class="form-control" type="date" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="PaymentStatus"></label>
+                        <select asp-for="PaymentStatus" asp-items="@(Html.GetEnumSelectList<SupplierPaymentStatus>())" class="form-select"></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The lines</h2>
+                <span asp-validation-for="Items" class="text-danger fs-14"></span>
+
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Device</th>
+                                <th style="width:140px">Quantity</th>
+                                <th style="width:160px">Unit cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < lines; i++)
+                            {
+                                <tr>
+                                    <td>
+                                        <select name="Items[@i].ProductId" class="form-select">
+                                            <option value="">Select a device</option>
+                                            @foreach (var product in Model.Products)
+                                            {
+                                                <option value="@product.Id">@product.Name - @product.Price.ToString("N2") Rs</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td><input name="Items[@i].Quantity" class="form-control" type="number" min="0" value="1" /></td>
+                                    <td><input name="Items[@i].UnitCost" class="form-control" type="number" step="0.01" min="0" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="text-muted-silver fs-14 mt-2 mb-0">
+                    Empty lines are ignored. The order starts as a draft and it is placed with the
+                    supplier afterwards.
+                </p>
+            </div>
+
+            <button class="btn btn-gold" type="submit"><i class="bi bi-check2-circle me-1"></i>Raise the order</button>
+            <a class="btn btn-ghost" asp-area="Admin" asp-controller="PurchaseOrders" asp-action="Index">Cancel</a>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass p-4">
+            <h2 class="h6 mb-3">Note</h2>
+            <p class="text-muted-silver fs-14 mb-0">
+                The stock of the store room grows by the ordered quantity as soon as the goods are
+                received. The money that is owed to the supplier is tracked on the same screen.
+            </p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,208 @@
+@model OrderWizardViewModel
+@{
+    ViewData["Title"] = "Place the order";
+
+    var discountTiers = Model.DiscountRules.Where(r => r.IsActive).OrderBy(r => r.MinConnections)
+        .Select(r => new { min = r.MinConnections, max = r.MaxConnections, pct = r.DiscountPercent })
+        .ToList();
+    var tiersJson = System.Text.Json.JsonSerializer.Serialize(discountTiers);
+}
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+<div class="row g-4" data-wizard-root
+     data-wizard-deposit="@Model.SecurityDeposit"
+     data-wizard-price="@(Model.Plan?.Price ?? 0m)"
+     data-wizard-tax="@Model.TaxPercent"
+     data-wizard-tiers="@tiersJson">
+    <div class="col-lg-8">
+        <div data-stepper>
+            <!-- ------------------------------------------------------------ stepper -->
+            <div class="stepper mb-4">
+                <div class="step active"><div class="dot">1</div><div class="label">Plan</div></div>
+                <div class="step"><div class="dot">2</div><div class="label">Details</div></div>
+                <div class="step"><div class="dot">3</div><div class="label">Review</div></div>
+            </div>
+
+        <form method="post" asp-area="Customer" asp-controller="Browse" asp-action="PlaceOrder" id="orderForm">
+            <input type="hidden" asp-for="PlanId" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <!-- ---------------------------------------------------------- step 1 -->
+            <div class="step-pane active" data-step-pane="1">
+                <div class="glass p-4">
+                    <h2 class="h5 mb-3">Choose the plan</h2>
+
+                    @if (Model.Plan is not null)
+                    {
+                        <div class="doc-tile mb-4">
+                            <span class="icon"><i class="bi @Model.Plan.Icon"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600">@Model.Plan.Name</div>
+                                <small class="text-muted-silver">@Model.Plan.Description</small>
+                            </div>
+                            <div class="plan-price" style="font-size:1.3rem;"><span class="currency">Rs</span> @Model.Plan.Price.ToString("N0")</div>
+                        </div>
+                    }
+
+                    <label class="form-label" asp-for="Quantity">Number of connections</label>
+                    <input asp-for="Quantity" class="form-control" type="number" min="1" max="1000" style="max-width:220px" data-wizard="quantity-input" />
+                    <span asp-validation-for="Quantity" class="text-danger fs-14"></span>
+
+                    @if (Model.DiscountRules.Count > 0)
+                    {
+                        <div class="mt-4">
+                            <div class="kpi-label mb-2">Bulk discount on the advance and the deposit</div>
+                            <div class="table-wrap">
+                                <table class="table-glass">
+                                    <thead>
+                                        <tr>
+                                            <th>Connections</th>
+                                            <th class="num">Discount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var rule in Model.DiscountRules.Where(r => r.IsActive).OrderBy(r => r.MinConnections))
+                                        {
+                                            <tr>
+                                                <td>@rule.MinConnections@(rule.MaxConnections.HasValue ? $" - {rule.MaxConnections}" : " and more")</td>
+                                                <td class="num text-gold fw-600">@rule.DiscountPercent.ToString("0")%</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- ---------------------------------------------------------- step 2 -->
+            <div class="step-pane" data-step-pane="2">
+                <div class="glass p-4">
+                    <h2 class="h5 mb-3">Installation details</h2>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="CityId">City</label>
+                            <select asp-for="CityId" class="form-select" asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(Model.Cities, "Id", "Name"))">
+                                <option value="">Choose a city</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="ContactNumber">Contact number</label>
+                            <input asp-for="ContactNumber" class="form-control" />
+                            <span asp-validation-for="ContactNumber" class="text-danger fs-14"></span>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" asp-for="InstallationAddress">Installation address</label>
+                            <input asp-for="InstallationAddress" class="form-control" />
+                            <span asp-validation-for="InstallationAddress" class="text-danger fs-14"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="alert-nexus alert-info">
+                                <i class="bi bi-telephone-fill"></i>
+                                <div class="fs-14">
+                                    <strong>Dial-up orders need a landline check.</strong>
+                                    If you already have a Nexus landline, enter the account id below. Otherwise tick the
+                                    box and we run two feasibility checks - the landline exchange and the internet server.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="ExistingLandlineAccountId">Existing Nexus landline account id</label>
+                            <input asp-for="ExistingLandlineAccountId" class="form-control" placeholder="T001000000000001" />
+                            <span asp-validation-for="ExistingLandlineAccountId" class="text-danger fs-14"></span>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" asp-for="RequiresLandline" type="checkbox" />
+                                <label class="form-check-label text-muted-silver fs-14" asp-for="RequiresLandline">I need a new landline line</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="EquipmentProductId">Equipment with the connection</label>
+                            <select asp-for="EquipmentProductId" class="form-select" data-wizard="equipment-input">
+                                <option value="" data-price="0">No equipment</option>
+                                @foreach (var product in Model.Equipment)
+                                {
+                                    <option value="@product.Id" data-price="@product.Price">@product.Name - @product.Price.ToString("N0") Rs</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="Notes">Notes for the partner</label>
+                            <input asp-for="Notes" class="form-control" placeholder="Best time for the survey" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ---------------------------------------------------------- step 3 -->
+            <div class="step-pane" data-step-pane="3">
+                <div class="glass p-4">
+                    <h2 class="h5 mb-3">Review and confirm</h2>
+
+                    <div class="stat-line"><span class="k">Plan</span><span class="v">@Model.Plan?.Name</span></div>
+                    <div class="stat-line"><span class="k">Connections</span><span class="v" data-wizard="quantity">@Model.Quantity</span></div>
+                    <div class="stat-line"><span class="k">Security deposit</span><span class="v"><span data-wizard="gross-deposit">@Model.GrossDeposit.ToString("N2")</span> Rs</span></div>
+                    <div class="stat-line"><span class="k">Advance payment</span><span class="v"><span data-wizard="gross-advance">@Model.GrossAdvance.ToString("N2")</span> Rs</span></div>
+                    <div class="stat-line"><span class="k">Bulk discount</span><span class="v text-gold"><span data-wizard="discount">@Model.DiscountPercent.ToString("0")</span>%</span></div>
+                    <div class="stat-line"><span class="k">Deposit after the discount</span><span class="v"><span data-wizard="deposit">@Model.NetDeposit.ToString("N2")</span> Rs</span></div>
+                    <div class="stat-line"><span class="k">Advance after the discount</span><span class="v"><span data-wizard="advance">@Model.NetAdvance.ToString("N2")</span> Rs</span></div>
+                    <div class="stat-line"><span class="k">Equipment</span><span class="v"><span data-wizard="equipment">@Model.EquipmentAmount.ToString("N2")</span> Rs</span></div>
+                    <div class="stat-line"><span class="k">Service tax (@Model.TaxPercent.ToString("0.##")%)</span><span class="v"><span data-wizard="tax">@((Model.TotalAmount - (Model.NetDeposit + Model.NetAdvance + Model.EquipmentAmount)).ToString("N2"))</span> Rs</span></div>
+                    <div class="stat-line"><span class="k">Total payable</span><span class="v text-gold fs-5"><span data-wizard="total">@Model.TotalAmount.ToString("N2")</span> Rs</span></div>
+
+                    <div class="alert-nexus alert-info mt-4">
+                        <i class="bi bi-cash-coin"></i>
+                        <div class="fs-14">
+                            This is a cash on delivery network. The activation invoice is settled with the installer,
+                            there is no online payment gateway and no card is required.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ---------------------------------------------------------- actions -->
+            <div class="d-flex flex-wrap gap-2 mt-4">
+                <button type="button" class="btn btn-ghost" data-step-prev><i class="bi bi-arrow-left me-1"></i>Back</button>
+                <button type="button" class="btn btn-outline-gold" data-step-next>Continue <i class="bi bi-arrow-right ms-1"></i></button>
+                <button type="submit" class="btn btn-gold ms-auto d-none" id="submitOrder" data-step-submit>
+                    <i class="bi bi-check2-circle me-1"></i>Place the order
+                </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- -------------------------------------------------------------- summary -->
+    <div class="col-lg-4">
+        <div class="glass p-4 position-sticky" style="top:96px;">
+            <h2 class="h5 mb-3">Order summary</h2>
+
+            <div class="plan-price mb-1"><span class="currency">Rs</span> <span data-wizard="total-round">@Model.TotalAmount.ToString("N0")</span></div>
+            <div class="text-muted-silver fs-14 mb-3">including the service tax of @Model.TaxPercent.ToString("0.##")%</div>
+
+            <hr class="divider-gold mb-3" />
+
+            <div class="stat-line"><span class="k">Deposit</span><span class="v"><span data-wizard="deposit">@Model.NetDeposit.ToString("N2")</span></span></div>
+            <div class="stat-line"><span class="k">Advance</span><span class="v"><span data-wizard="advance">@Model.NetAdvance.ToString("N2")</span></span></div>
+            <div class="stat-line"><span class="k">Equipment</span><span class="v"><span data-wizard="equipment">@Model.EquipmentAmount.ToString("N2")</span></span></div>
+            <div class="stat-line"><span class="k">Discount</span><span class="v text-gold"><span data-wizard="discount">@Model.DiscountPercent.ToString("0")</span>%</span></div>
+
+            <a class="btn btn-ghost w-100 mt-3" asp-area="Customer" asp-controller="Browse" asp-action="Index">
+                <i class="bi bi-arrow-left me-1"></i>Back to the catalogue
+            </a>
+        </div>
+    </div>
+</div>

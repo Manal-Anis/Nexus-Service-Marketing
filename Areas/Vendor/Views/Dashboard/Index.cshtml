@@ -1,0 +1,295 @@
+@model VendorDashboardViewModel
+@{
+    ViewData["Title"] = "Partner dashboard";
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4">
+        <i class="bi bi-check-circle-fill"></i>
+        <div>@success</div>
+    </div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+<!-- ------------------------------------------------------------------ welcome -->
+<div class="glass p-4 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+        <div class="eyebrow">Service partner</div>
+        <h2 class="h4 mb-1">@Model.Vendor.BusinessName</h2>
+        <p class="text-muted-silver fs-14 mb-0">
+            <i class="bi bi-person-badge me-1"></i>@Model.OwnerName
+            <span class="mx-2">|</span>
+            <i class="bi bi-geo-alt me-1"></i>@(Model.Vendor.City?.Name ?? "-")
+            <span class="mx-2">|</span>
+            <i class="bi bi-cash-coin me-1"></i>Cash on delivery only
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-gold" asp-area="Vendor" asp-controller="Orders" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i>Walk-in order
+        </a>
+        <a class="btn btn-ghost" asp-area="Vendor" asp-controller="Feasibility" asp-action="Index">
+            <i class="bi bi-clipboard2-pulse me-1"></i>Feasibility queue
+        </a>
+    </div>
+</div>
+
+<!-- ------------------------------------------------------------------ KPI -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-receipt"></i></span>
+            <div class="kpi-label">Orders received</div>
+            <div class="kpi-value">@Model.TotalOrders</div>
+            <div class="kpi-delta">@Model.PendingOrders waiting for the survey</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-router"></i></span>
+            <div class="kpi-label">Live connections</div>
+            <div class="kpi-value">@Model.ActiveConnections</div>
+            <div class="kpi-delta">@Model.InactiveConnections suspended or closed</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-cash-stack"></i></span>
+            <div class="kpi-label">Cash collected</div>
+            <div class="kpi-value">@Model.CollectedAmount.ToString("N0")</div>
+            <div class="kpi-delta">Rupees received at the counter</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+            <div class="kpi-label">Outstanding</div>
+            <div class="kpi-value">@Model.OutstandingAmount.ToString("N0")</div>
+            <div class="kpi-delta">Rupees still to be collected</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- ------------------------------------------------------------- status chart -->
+    <div class="col-xl-4">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">Orders by lifecycle state</h2>
+            <div style="height:260px">
+                <canvas id="chartOrdersByStatus"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------- trend chart -->
+    <div class="col-xl-8">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">Cash collected over the last six months</h2>
+            <div style="height:260px">
+                <canvas id="chartCollectionTrend"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- ------------------------------------------------------------- awaiting feasibility -->
+    <div class="col-xl-7">
+        <div class="glass p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h6 mb-0">Orders waiting for the survey</h2>
+                <a class="btn btn-ghost btn-sm" asp-area="Vendor" asp-controller="Feasibility" asp-action="Index">Open the queue</a>
+            </div>
+
+            @if (Model.OrdersAwaitingFeasibility.Count == 0)
+            {
+                <div class="empty-state">
+                    <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+                        <circle cx="100" cy="80" r="42" stroke="#d4af37" stroke-width="2" opacity=".5" />
+                        <path d="M78 80l16 16 30-32" stroke="#c9ccd3" stroke-width="2" opacity=".55" />
+                    </svg>
+                    <div class="title">Nothing pending</div>
+                    <p class="text">Every order of your desk has been surveyed already.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-wrap table-wrap-lg">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Customer</th>
+                                <th>Plan</th>
+                                <th>Status</th>
+                                <th class="num">Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model.OrdersAwaitingFeasibility)
+                            {
+                                <tr>
+                                    <td><span class="order-id-chip">@order.OrderId</span></td>
+                                    <td class="fs-14">@order.Customer?.FullName</td>
+                                    <td class="fs-14 text-muted-silver">@order.Plan?.Name</td>
+                                    <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(order.Status))</td>
+                                    <td class="num text-silver">@order.TotalAmount.ToString("N2")</td>
+                                    <td class="text-end">
+                                        <a class="btn btn-ghost btn-sm" asp-area="Vendor" asp-controller="Feasibility" asp-action="Index" asp-route-orderId="@order.OrderId">Survey</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------- connections + mix -->
+    <div class="col-xl-5">
+        <div class="glass p-4 mb-4">
+            <h2 class="h6 mb-3">Connections per service</h2>
+            @if (Model.ConnectionsByType.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No connection has been activated yet.</p>
+            }
+            else
+            {
+                <div style="height:220px">
+                    <canvas id="chartConnectionsByType"></canvas>
+                </div>
+            }
+        </div>
+
+        <div class="glass p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h6 mb-0">Latest connections</h2>
+                <a class="btn btn-ghost btn-sm" asp-area="Vendor" asp-controller="Connections" asp-action="Index">All</a>
+            </div>
+
+            @if (Model.RecentConnections.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">A connection appears here as soon as it is activated.</p>
+            }
+            else
+            {
+                <div class="d-grid gap-2">
+                    @foreach (var connection in Model.RecentConnections)
+                    {
+                        <a class="doc-tile text-decoration-none" asp-area="Vendor" asp-controller="Connections" asp-action="Details" asp-route-id="@connection.Id">
+                            <span class="icon"><i class="bi bi-router"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600">@connection.Plan?.Name</div>
+                                <small class="text-muted-silver"><span class="account-id-chip">@connection.AccountId</span> - @connection.Customer?.FullName</small>
+                            </div>
+                            @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(connection.Status))
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var colors = window.nexusChartColors;
+
+            var statusCanvas = document.getElementById('chartOrdersByStatus');
+            if (statusCanvas) {
+                var statusLabels = @Html.Raw(Json.Serialize(Model.OrdersByStatus.Keys.ToList()));
+                var statusValues = @Html.Raw(Json.Serialize(Model.OrdersByStatus.Values.ToList()));
+                window.nexusChart(statusCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusLabels,
+                        datasets: [{
+                            data: statusValues,
+                            backgroundColor: [colors.gold, colors.goldLight, '#6f8f6a', colors.goldDeep, '#b5533f', '#5a5c66'],
+                            borderColor: 'rgba(8,8,10,0.85)',
+                            borderWidth: 2,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        cutout: '62%',
+                        plugins: { legend: { position: 'bottom' } },
+                        scales: {}
+                    }
+                });
+            }
+
+            var trendCanvas = document.getElementById('chartCollectionTrend');
+            if (trendCanvas) {
+                var months = @Html.Raw(Json.Serialize(Model.CollectionTrend.Select(t => t.Month).ToList()));
+                var amounts = @Html.Raw(Json.Serialize(Model.CollectionTrend.Select(t => t.Amount).ToList()));
+                window.nexusChart(trendCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Collected (Rs)',
+                            data: amounts,
+                            borderColor: colors.gold,
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: colors.goldLight,
+                            pointBorderColor: 'rgba(8,8,10,0.9)',
+                            fill: true,
+                            backgroundColor: function (context) {
+                                var chart = context.chart;
+                                if (!chart.chartArea) return 'rgba(212,175,55,0.15)';
+                                return window.nexusChartGradient(chart.ctx, chart.chartArea, 'rgba(212,175,55,0.38)', 'rgba(212,175,55,0.02)');
+                            }
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.06)' } },
+                            y: { ticks: { color: colors.silverMuted, callback: function (v) { return v.toLocaleString(); } } }
+                        }
+                    }
+                });
+            }
+
+            var mixCanvas = document.getElementById('chartConnectionsByType');
+            if (mixCanvas) {
+                var mixLabels = @Html.Raw(Json.Serialize(Model.ConnectionsByType.Keys.ToList()));
+                var mixValues = @Html.Raw(Json.Serialize(Model.ConnectionsByType.Values.ToList()));
+                window.nexusChart(mixCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: mixLabels,
+                        datasets: [{
+                            label: 'Connections',
+                            data: mixValues,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            backgroundColor: function (context) {
+                                var chart = context.chart;
+                                if (!chart.chartArea) return 'rgba(201,204,211,0.6)';
+                                return window.nexusChartGradient(chart.ctx, chart.chartArea, 'rgba(201,204,211,0.95)', 'rgba(201,204,211,0.25)');
+                            }
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } },
+                        scales: { x: { grid: { display: false } }, y: { ticks: { precision: 0 } } }
+                    }
+                });
+            }
+        });
+    </script>
+}

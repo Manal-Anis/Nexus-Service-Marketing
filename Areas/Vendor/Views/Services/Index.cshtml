@@ -1,0 +1,96 @@
+@{
+    ViewData["Title"] = "My services";
+    var own = ViewData["OwnPlans"] as List<Plan> ?? new List<Plan>();
+    var official = ViewData["OfficialPlans"] as List<Plan> ?? new List<Plan>();
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4">
+        <i class="bi bi-check-circle-fill"></i>
+        <div>@success</div>
+    </div>
+}
+
+<!-- ------------------------------------------------------------------ own plans -->
+<div class="glass p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="h5 mb-1">My plans</h2>
+            <p class="text-muted-silver fs-14 mb-0">A plan is published on the storefront after the administrator approved it.</p>
+        </div>
+        <a class="btn btn-gold btn-sm" asp-area="Vendor" asp-controller="Services" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i>Submit a plan
+        </a>
+    </div>
+
+    @if (own.Count == 0)
+    {
+        <div class="empty-state">
+            <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+                <rect x="55" y="45" width="90" height="70" rx="10" stroke="#d4af37" stroke-width="2" opacity=".5" />
+                <path d="M75 70h50M75 90h30" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+            </svg>
+            <div class="title">No plan of your own</div>
+            <p class="text">Submit a plan and the administrator will review it before it goes live.</p>
+            <a class="btn btn-gold" asp-area="Vendor" asp-controller="Services" asp-action="Create">Submit a plan</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table-glass">
+                <thead>
+                    <tr>
+                        <th>Plan</th>
+                        <th>Service</th>
+                        <th>Type</th>
+                        <th>Period</th>
+                        <th class="num">Price</th>
+                        <th>Approval</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var plan in own)
+                    {
+                        <tr>
+                            <td class="text-silver fw-600">@plan.Name</td>
+                            <td class="fs-14 text-muted-silver">@plan.Category?.Name</td>
+                            <td class="fs-14">@plan.Kind.ToDisplayName()</td>
+                            <td class="fs-14 text-muted-silver">@plan.BillingPeriod.ToDisplayName()</td>
+                            <td class="num text-silver">@plan.Price.ToString("N0")</td>
+                            <td>
+                                @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(plan.ApprovalStatus))
+                                @if (!string.IsNullOrWhiteSpace(plan.ApprovalRemarks))
+                                {
+                                    <small class="text-muted-silver d-block">@plan.ApprovalRemarks</small>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- ------------------------------------------------------------------ official -->
+<div class="glass p-4">
+    <h2 class="h5 mb-3">The official Nexus catalogue</h2>
+
+    <div class="row g-3">
+        @foreach (var plan in official)
+        {
+            <div class="col-md-6 col-xl-4">
+                <div class="doc-tile h-100">
+                    <span class="icon"><i class="bi @plan.Icon"></i></span>
+                    <div class="flex-grow-1">
+                        <div class="text-silver fw-600">@plan.Name</div>
+                        <small class="text-muted-silver">@plan.Category?.Name - @plan.BillingPeriod.ToDisplayName()</small>
+                        <div class="plan-price mt-2"><span class="currency">Rs</span> @plan.Price.ToString("N0")</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

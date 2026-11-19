@@ -1,0 +1,67 @@
+@model List<Order>
+@{
+    ViewData["Title"] = "My orders";
+    var currentStatus = ViewData["CurrentStatus"] as string;
+}
+
+<div class="glass p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="kpi-label me-2">Filter</span>
+        <a class="btn btn-sm @(string.IsNullOrEmpty(currentStatus) ? "btn-gold" : "btn-ghost")"
+           asp-area="Customer" asp-controller="Orders" asp-action="Index">All</a>
+        @foreach (var status in Enum.GetValues<OrderStatus>())
+        {
+            <a class="btn btn-sm @(currentStatus == status.ToString() ? "btn-gold" : "btn-ghost")"
+               asp-area="Customer" asp-controller="Orders" asp-action="Index" asp-route-status="@status">@status.ToDisplayName()</a>
+        }
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <rect x="45" y="30" width="110" height="100" rx="10" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M65 60h70M65 80h70M65 100h40" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No order in this view</div>
+        <p class="text">You have not placed an order with this state yet.</p>
+        <a class="btn btn-gold" asp-area="Customer" asp-controller="Browse" asp-action="Index">Browse the plans</a>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Order id</th>
+                    <th>Plan</th>
+                    <th>Partner</th>
+                    <th>Placed</th>
+                    <th>Status</th>
+                    <th class="num">Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in Model)
+                {
+                    <tr>
+                        <td><span class="order-id-chip">@order.OrderId</span></td>
+                        <td class="fs-14">@order.Plan?.Name</td>
+                        <td class="fs-14 text-muted-silver">@order.Vendor?.BusinessName</td>
+                        <td class="fs-14">@order.PlacedAt.ToString("dd MMM yyyy")</td>
+                        <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(order.Status))</td>
+                        <td class="num text-silver">@order.TotalAmount.ToString("N2")</td>
+                        <td class="text-end">
+                            <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Orders" asp-action="Details" asp-route-id="@order.OrderId">
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

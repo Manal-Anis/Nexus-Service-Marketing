@@ -1,0 +1,208 @@
+@using NexusServiceMarketingSystem
+@using NexusServiceMarketingSystem.Models
+@inject NexusServiceMarketingSystem.Services.CurrentUserService CurrentUser
+@{
+    var area = ViewContext.RouteData.Values["area"]?.ToString() ?? string.Empty;
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var title = ViewData["Title"] as string ?? "Dashboard";
+
+    bool Is(string c, string a = "Index") => controller.Equals(c, StringComparison.OrdinalIgnoreCase) && action.Equals(a, StringComparison.OrdinalIgnoreCase);
+    bool Group(string c) => controller.Equals(c, StringComparison.OrdinalIgnoreCase);
+
+    var profile = await CurrentUser.GetProfileAsync();
+    var userName = string.IsNullOrWhiteSpace(profile.FullName) ? "Guest" : profile.FullName;
+    var initials = string.Join("", userName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => w[..1].ToUpperInvariant()));
+    if (string.IsNullOrEmpty(initials))
+    {
+        initials = "U";
+    }
+    var roleLabel = User.IsInRole("Admin") ? "Administrator" : User.IsInRole("Vendor") ? "Service Partner" : "Customer";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@title | Nexus @roleLabel</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Cinzel:wght@500;600&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/lib/aos/aos.css" />
+    <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
+    <script>document.documentElement.classList.add("js");</script>
+    <link rel="icon" href="~/favicon.ico" />
+</head>
+<body class="nexus-body">
+    <div class="dash-shell">
+        <!-- ==================================================== sidebar -->
+        <aside class="glass-sidebar">
+            <div class="sidebar-brand">
+                <span class="brand-mark"><i class="bi bi-diagram-3-fill"></i></span>
+                <div>
+                    <div class="brand-word fs-5 lh-1">NEXUS</div>
+                    <small class="text-muted-silver text-uppercase" style="font-size:.62rem;letter-spacing:.18em;">@roleLabel</small>
+                </div>
+            </div>
+
+            @if (area == "Admin")
+            {
+                <div class="sidebar-section">Overview</div>
+                <a class="sidebar-link @(Is("Dashboard") ? "active" : "")" asp-area="Admin" asp-controller="Dashboard" asp-action="Index"><i class="bi bi-speedometer2"></i>Dashboard</a>
+                <a class="sidebar-link @(Is("Search") ? "active" : "")" asp-area="Admin" asp-controller="Search" asp-action="Index"><i class="bi bi-search"></i>Advanced search</a>
+
+                <div class="sidebar-section">People</div>
+                <a class="sidebar-link @(Group("Vendors") ? "active" : "")" asp-area="Admin" asp-controller="Vendors" asp-action="Index"><i class="bi bi-shop"></i>Vendors</a>
+                <a class="sidebar-link @(Group("Employees") ? "active" : "")" asp-area="Admin" asp-controller="Employees" asp-action="Index"><i class="bi bi-person-badge"></i>Employees</a>
+                <a class="sidebar-link @(Group("RetailShops") ? "active" : "")" asp-area="Admin" asp-controller="RetailShops" asp-action="Index"><i class="bi bi-shop-window"></i>Retail shops</a>
+                <a class="sidebar-link @(Group("Customers") ? "active" : "")" asp-area="Admin" asp-controller="Customers" asp-action="Index"><i class="bi bi-people"></i>Customers</a>
+
+                <div class="sidebar-section">Catalogue</div>
+                <a class="sidebar-link @(Group("Plans") ? "active" : "")" asp-area="Admin" asp-controller="Plans" asp-action="Index"><i class="bi bi-collection"></i>Plans</a>
+                <a class="sidebar-link @(Group("Products") ? "active" : "")" asp-area="Admin" asp-controller="Products" asp-action="Index"><i class="bi bi-box-seam"></i>Equipment</a>
+                <a class="sidebar-link @(Group("Suppliers") ? "active" : "")" asp-area="Admin" asp-controller="Suppliers" asp-action="Index"><i class="bi bi-truck"></i>Suppliers</a>
+                <a class="sidebar-link @(Group("PurchaseOrders") ? "active" : "")" asp-area="Admin" asp-controller="PurchaseOrders" asp-action="Index"><i class="bi bi-clipboard-check"></i>Purchase orders</a>
+
+                <div class="sidebar-section">Operations</div>
+                <a class="sidebar-link @(Group("Orders") ? "active" : "")" asp-area="Admin" asp-controller="Orders" asp-action="Index"><i class="bi bi-receipt"></i>Orders</a>
+                <a class="sidebar-link @(Group("Connections") ? "active" : "")" asp-area="Admin" asp-controller="Connections" asp-action="Index"><i class="bi bi-router"></i>Connections</a>
+                <a class="sidebar-link @(Group("Bills") ? "active" : "")" asp-area="Admin" asp-controller="Bills" asp-action="Index"><i class="bi bi-file-earmark-text"></i>Bills</a>
+                <a class="sidebar-link @(Group("Payments") ? "active" : "")" asp-area="Admin" asp-controller="Payments" asp-action="Index"><i class="bi bi-cash-stack"></i>Payments</a>
+
+                <div class="sidebar-section">System</div>
+                <a class="sidebar-link @(Group("Cities") ? "active" : "")" asp-area="Admin" asp-controller="Cities" asp-action="Index"><i class="bi bi-geo-alt"></i>Cities</a>
+                <a class="sidebar-link @(Group("Settings") ? "active" : "")" asp-area="Admin" asp-controller="Settings" asp-action="Index"><i class="bi bi-sliders"></i>Settings</a>
+                <a class="sidebar-link @(Group("Feedback") ? "active" : "")" asp-area="Admin" asp-controller="Feedback" asp-action="Index"><i class="bi bi-chat-square-heart"></i>Feedback</a>
+                <a class="sidebar-link @(Group("Messages") ? "active" : "")" asp-area="Admin" asp-controller="Messages" asp-action="Index"><i class="bi bi-envelope"></i>Messages</a>
+                <a class="sidebar-link @(Group("Audit") ? "active" : "")" asp-area="Admin" asp-controller="Audit" asp-action="Index"><i class="bi bi-shield-lock"></i>Audit log</a>
+                <a class="sidebar-link @(Group("Reports") ? "active" : "")" asp-area="Admin" asp-controller="Reports" asp-action="Index"><i class="bi bi-bar-chart"></i>Reports</a>
+            }
+            else if (area == "Vendor")
+            {
+                <div class="sidebar-section">Overview</div>
+                <a class="sidebar-link @(Is("Dashboard") ? "active" : "")" asp-area="Vendor" asp-controller="Dashboard" asp-action="Index"><i class="bi bi-speedometer2"></i>Dashboard</a>
+                <a class="sidebar-link @(Is("Search") ? "active" : "")" asp-area="Vendor" asp-controller="Search" asp-action="Index"><i class="bi bi-search"></i>Advanced search</a>
+
+                <div class="sidebar-section">Service desk</div>
+                <a class="sidebar-link @(Group("Orders") ? "active" : "")" asp-area="Vendor" asp-controller="Orders" asp-action="Index"><i class="bi bi-receipt"></i>Orders</a>
+                <a class="sidebar-link @(Group("Feasibility") ? "active" : "")" asp-area="Vendor" asp-controller="Feasibility" asp-action="Index"><i class="bi bi-clipboard2-pulse"></i>Feasibility</a>
+                <a class="sidebar-link @(Group("Connections") ? "active" : "")" asp-area="Vendor" asp-controller="Connections" asp-action="Index"><i class="bi bi-router"></i>Connections</a>
+
+                <div class="sidebar-section">Money</div>
+                <a class="sidebar-link @(Group("Billing") ? "active" : "")" asp-area="Vendor" asp-controller="Billing" asp-action="Index"><i class="bi bi-file-earmark-text"></i>Billing</a>
+                <a class="sidebar-link @(Group("Payments") ? "active" : "")" asp-area="Vendor" asp-controller="Payments" asp-action="Index"><i class="bi bi-cash-stack"></i>Payments</a>
+
+                <div class="sidebar-section">Assets</div>
+                <a class="sidebar-link @(Group("Services") ? "active" : "")" asp-area="Vendor" asp-controller="Services" asp-action="Index"><i class="bi bi-collection"></i>My services</a>
+                <a class="sidebar-link @(Group("Equipment") ? "active" : "")" asp-area="Vendor" asp-controller="Equipment" asp-action="Index"><i class="bi bi-box-seam"></i>Equipment</a>
+
+                <div class="sidebar-section">People</div>
+                <a class="sidebar-link @(Group("Customers") ? "active" : "")" asp-area="Vendor" asp-controller="Customers" asp-action="Index"><i class="bi bi-people"></i>Customers</a>
+                <a class="sidebar-link @(Group("Reports") ? "active" : "")" asp-area="Vendor" asp-controller="Reports" asp-action="Index"><i class="bi bi-bar-chart"></i>Reports</a>
+            }
+            else
+            {
+                <div class="sidebar-section">Overview</div>
+                <a class="sidebar-link @(Is("Dashboard") ? "active" : "")" asp-area="Customer" asp-controller="Dashboard" asp-action="Index"><i class="bi bi-speedometer2"></i>Dashboard</a>
+                <a class="sidebar-link @(Is("Search") ? "active" : "")" asp-area="Customer" asp-controller="Search" asp-action="Index"><i class="bi bi-search"></i>Advanced search</a>
+
+                <div class="sidebar-section">Services</div>
+                <a class="sidebar-link @(Group("Browse") ? "active" : "")" asp-area="Customer" asp-controller="Browse" asp-action="Index"><i class="bi bi-collection"></i>Browse plans</a>
+                <a class="sidebar-link @(Group("Orders") ? "active" : "")" asp-area="Customer" asp-controller="Orders" asp-action="Index"><i class="bi bi-receipt"></i>My orders</a>
+                <a class="sidebar-link @(Group("Connections") ? "active" : "")" asp-area="Customer" asp-controller="Connections" asp-action="Index"><i class="bi bi-router"></i>My connections</a>
+
+                <div class="sidebar-section">Billing</div>
+                <a class="sidebar-link @(Group("Bills") ? "active" : "")" asp-area="Customer" asp-controller="Bills" asp-action="Index"><i class="bi bi-file-earmark-text"></i>My bills</a>
+                <a class="sidebar-link @(Group("Payments") ? "active" : "")" asp-area="Customer" asp-controller="Payments" asp-action="Index"><i class="bi bi-cash-stack"></i>Payments</a>
+
+                <div class="sidebar-section">Account</div>
+                <a class="sidebar-link @(Group("Documents") ? "active" : "")" asp-area="Customer" asp-controller="Documents" asp-action="Index"><i class="bi bi-folder2-open"></i>My documents</a>
+                <a class="sidebar-link @(Group("Profile") ? "active" : "")" asp-area="Customer" asp-controller="Profile" asp-action="Index"><i class="bi bi-person-gear"></i>Profile</a>
+                <a class="sidebar-link @(Group("Feedback") ? "active" : "")" asp-area="Customer" asp-controller="Feedback" asp-action="Index"><i class="bi bi-chat-square-heart"></i>Feedback</a>
+            }
+
+            <div style="height:26px"></div>
+            <a class="sidebar-link" asp-area="" asp-controller="Home" asp-action="Index"><i class="bi bi-house-door"></i>Back to website</a>
+        </aside>
+
+        <div class="sidebar-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1040;display:none;"></div>
+
+        <!-- ==================================================== main -->
+        <div class="dash-main">
+            <header class="dash-topbar">
+                <button class="btn btn-ghost btn-sm d-lg-none" data-sidebar-toggle=""><i class="bi bi-list"></i></button>
+
+                <div class="flex-grow-1">
+                    <h1 class="page-title">@ViewData["Title"]</h1>
+                    @if (ViewData["Subtitle"] is string subtitle && !string.IsNullOrWhiteSpace(subtitle))
+                    {
+                        <p class="page-subtitle">@subtitle</p>
+                    }
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    @await RenderSectionAsync("Topbar", required: false)
+                    <a class="btn btn-ghost btn-sm" asp-area="" asp-controller="Home" asp-action="TrackOrder" title="Track an order">
+                        <i class="bi bi-search me-1"></i><span class="d-none d-md-inline">Track order</span>
+                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-ghost btn-sm dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+                            <span class="brand-mark" style="width:30px;height:30px;font-size:.85rem;border-radius:9px;">@initials</span>
+                            <span class="d-none d-md-inline">@userName</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">@roleLabel</h6></li>
+                            @if (area == "Customer")
+                            {
+                                <li><a class="dropdown-item" asp-area="Customer" asp-controller="Profile" asp-action="Index"><i class="bi bi-person-gear me-2"></i>Profile</a></li>
+                            }
+                            else
+                            {
+                                <li><a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key me-2"></i>Change password</a></li>
+                            }
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <form asp-area="" asp-controller="Account" asp-action="Logout" asp-route-returnUrl="@Context.Request.Path" method="post">
+                                    <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right me-2"></i>Sign out</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <section class="dash-content">
+                @RenderBody()
+            </section>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/chart.js/chart.umd.min.js"></script>
+    <script src="~/lib/aos/aos.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.AOS) { AOS.init({ duration: 700, once: true, offset: 40 }); }
+            var token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) { document.cookie = "X-CSRF-TOKEN=" + token.value + "; path=/"; }
+            var overlay = document.querySelector('.sidebar-overlay');
+            var sidebar = document.querySelector('.glass-sidebar');
+            if (overlay && sidebar) {
+                overlay.addEventListener('click', function () { sidebar.classList.remove('open'); });
+            }
+            document.addEventListener('click', function (e) {
+                if (sidebar && sidebar.classList.contains('open') && window.innerWidth < 992 && !e.target.closest('.glass-sidebar')) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

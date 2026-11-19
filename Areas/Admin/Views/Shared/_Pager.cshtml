@@ -1,0 +1,48 @@
+@model PagerViewModel
+@{
+    // The bar is only drawn when there is more than one page.
+    if (Model.TotalPages <= 1)
+    {
+        return;
+    }
+
+    // The active filters are carried over to every page link.
+    var query = new List<string>();
+    foreach (var pair in Model.RouteValues)
+    {
+        if (!string.IsNullOrWhiteSpace(pair.Value))
+        {
+            query.Add($"{Uri.EscapeDataString(pair.Key)}={Uri.EscapeDataString(pair.Value)}");
+        }
+    }
+
+    string LinkFor(int page)
+    {
+        var parts = new List<string>(query) { $"{Model.PageRouteKey}={page}" };
+        return $"{Context.Request.Path}?{string.Join("&", parts)}";
+    }
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+    <span class="text-muted-silver fs-14">
+        Page @Model.Page of @Model.TotalPages - @Model.TotalRows record(s)
+    </span>
+
+    <div class="d-flex flex-wrap gap-1">
+        @if (Model.Page > 1)
+        {
+            <a class="btn btn-ghost btn-sm" href="@LinkFor(Model.Page - 1)">Previous</a>
+        }
+
+        @for (var i = 1; i <= Model.TotalPages; i++)
+        {
+            var isCurrent = i == Model.Page;
+            <a class="btn btn-sm @(isCurrent ? "btn-gold" : "btn-ghost")" href="@LinkFor(i)">@i</a>
+        }
+
+        @if (Model.Page < Model.TotalPages)
+        {
+            <a class="btn btn-ghost btn-sm" href="@LinkFor(Model.Page + 1)">Next</a>
+        }
+    </div>
+</div>

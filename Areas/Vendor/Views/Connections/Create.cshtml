@@ -1,0 +1,139 @@
+@model CreateConnectionViewModel
+@{
+    ViewData["Title"] = "Create a connection";
+    var orders = ViewData["FeasibleOrders"] as List<Order> ?? new List<Order>();
+}
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" asp-area="Vendor" asp-controller="Connections" asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The feasible order</h2>
+
+                @if (orders.Count == 0)
+                {
+                    <div class="empty-state">
+                        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+                            <circle cx="100" cy="80" r="42" stroke="#d4af37" stroke-width="2" opacity=".5" />
+                            <path d="M100 60v40M80 80h40" stroke="#c9ccd3" stroke-width="2" opacity=".5" />
+                        </svg>
+                        <div class="title">No feasible order</div>
+                        <p class="text">A connection can only be created when the survey of the order came back feasible.</p>
+                        <a class="btn btn-gold" asp-area="Vendor" asp-controller="Feasibility" asp-action="Index">Open the feasibility queue</a>
+                    </div>
+                }
+                else
+                {
+                    <label class="form-label" for="orderSelect">Order</label>
+                    <select class="form-select mb-3" id="orderSelect" name="OrderId">
+                        @foreach (var order in orders)
+                        {
+                            <option value="@order.Id" selected="@(order.Id == Model.OrderId)"
+                                    data-number="@order.OrderId"
+                                    data-plan="@order.Plan?.Name"
+                                    data-customer="@order.Customer?.FullName"
+                                    data-quantity="@order.Quantity"
+                                    data-equipment="@order.EquipmentProduct?.Name">
+                                @order.OrderId - @order.Customer?.FullName - @order.Plan?.Name
+                            </option>
+                        }
+                    </select>
+
+                    <div class="stat-line"><span class="k">Order id</span><span class="v" id="orderNumber">@Model.OrderNumber</span></div>
+                    <div class="stat-line"><span class="k">Customer</span><span class="v" id="orderCustomer">@Model.CustomerName</span></div>
+                    <div class="stat-line"><span class="k">Plan</span><span class="v" id="orderPlan">@Model.PlanName</span></div>
+                    <div class="stat-line"><span class="k">Connections</span><span class="v" id="orderQuantity">@Model.Quantity</span></div>
+                    <div class="stat-line"><span class="k">Device</span><span class="v" id="orderEquipment">@Model.EquipmentProductName</span></div>
+                }
+            </div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The device</h2>
+
+                <div id="deviceBlock">
+                    <label class="form-label" for="serial">Equipment serial number</label>
+                    <input class="form-control mb-3" id="serial" asp-for="EquipmentSerialNumber" placeholder="SN-2026-0001" />
+                </div>
+
+                <p class="text-muted-silver fs-14 mb-0" id="stockHint">
+                    <i class="bi bi-box-seam me-1"></i>
+                    @Model.Equipment.Count device(s) are in the stock. The equipment selected on the order is
+                    issued and the stock is reduced automatically.
+                </p>
+
+                @if (Model.Equipment.Count == 0)
+                {
+                    <div class="alert-nexus alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div class="fs-14">No device is left in the stock. The connection can still be created without equipment.</div>
+                    </div>
+                }
+            </div>
+
+            <button class="btn btn-gold" type="submit" disabled="@(orders.Count == 0)">
+                <i class="bi bi-router me-1"></i>Activate the connection
+            </button>
+            <a class="btn btn-ghost" asp-area="Vendor" asp-controller="Connections" asp-action="Index">Cancel</a>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">What happens next</h2>
+            <ul class="timeline">
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Account id issued</div>
+                    <div class="timeline-meta">1 letter + 3 digit city code + 12 digit serial</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Equipment assigned</div>
+                    <div class="timeline-meta">The device leaves the stock room</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Activation invoice raised</div>
+                    <div class="timeline-meta">Deposit, advance, equipment and the service tax</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Security deposit held</div>
+                    <div class="timeline-meta">Refundable when the contract ends</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var select = document.getElementById('orderSelect');
+            if (!select) return;
+
+            select.addEventListener('change', function () {
+                var option = select.selectedOptions[0];
+                if (!option) return;
+                document.getElementById('orderNumber').textContent = option.dataset.number || '';
+                document.getElementById('orderCustomer').textContent = option.dataset.customer || '';
+                document.getElementById('orderPlan').textContent = option.dataset.plan || '';
+                document.getElementById('orderQuantity').textContent = option.dataset.quantity || '';
+
+                var device = option.dataset.equipment || '';
+                document.getElementById('orderEquipment').textContent = device || 'No device on this order';
+                document.getElementById('deviceBlock').classList.toggle('d-none', device === '');
+            });
+        });
+    </script>
+}

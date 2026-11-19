@@ -1,0 +1,184 @@
+@model Bill
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = $"Invoice {Model.BillNumber}";
+    ViewData["BackUrl"] = Url.Action("Details", "Billing", new { area = "Vendor", id = Model.Id });
+    ViewData["BackText"] = "Back to the invoice";
+}
+
+<div class="print-sheet">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-share fs-4 print-gold"></i>
+                <span class="fs-4 fw-bold" style="letter-spacing:0.18em;">NEXUS</span>
+            </div>
+            <div class="fs-14 print-gold">Service Marketing System</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Connection?.Vendor?.BusinessName))
+            {
+                <div class="fs-14">Served by @Model.Connection!.Vendor!.BusinessName</div>
+            }
+        </div>
+        <div class="text-end">
+            <div class="fs-5 fw-bold">@Model.BillNumber</div>
+            <div class="fs-14">@Model.BillType.ToDisplayName()</div>
+            <div class="fs-14">Generated on @Model.GeneratedOn.ToString("dd MMM yyyy")</div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6">
+            <div class="fs-14 fw-bold mb-1">Billed to</div>
+            <div>@Model.Connection?.Customer?.FullName</div>
+            <div>@Model.Connection?.InstallationAddress</div>
+            <div>@Model.Connection?.ContactNumber</div>
+            <div>@Model.Connection?.City?.Name</div>
+        </div>
+        <div class="col-6">
+            <div class="fs-14 fw-bold mb-1">Service details</div>
+            <div>Account: @Model.Connection?.AccountId</div>
+            <div>Plan: @Model.Connection?.Plan?.Name</div>
+            <div>Partner: @Model.Connection?.Vendor?.BusinessName</div>
+            <div>Period: @Model.PeriodStart.ToString("dd MMM yyyy") – @Model.PeriodEnd.ToString("dd MMM yyyy")</div>
+            <div>Due date: @Model.DueDate.ToString("dd MMM yyyy")</div>
+        </div>
+    </div>
+
+    <table class="mb-4">
+        <thead>
+            <tr>
+                <th style="width:44%;">Description</th>
+                <th style="width:16%;">Type</th>
+                <th style="width:14%;text-align:right;">Quantity</th>
+                <th style="width:13%;text-align:right;">Unit price</th>
+                <th style="width:13%;text-align:right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Lines.Count == 0)
+            {
+                <tr>
+                    <td colspan="5">No charge line has been posted on this invoice.</td>
+                </tr>
+            }
+            else
+            {
+                foreach (var line in Model.Lines.OrderBy(l => l.SortOrder))
+                {
+                    <tr>
+                        <td>@line.Description</td>
+                        <td>@line.LineType</td>
+                        <td style="text-align:right;">@line.Quantity.ToString("N2")</td>
+                        <td style="text-align:right;">@line.UnitPrice.ToString("N2")</td>
+                        <td style="text-align:right;">@line.Amount.ToString("N2")</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <div class="row justify-content-end">
+        <div class="col-md-6">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Plan and usage charges</td>
+                        <td style="text-align:right;">@((Model.PlanCharge + Model.LocalChargeAmount + Model.StdChargeAmount + Model.MobileChargeAmount).ToString("N2"))</td>
+                    </tr>
+                    @if (Model.EquipmentChargeAmount > 0)
+                    {
+                        <tr>
+                            <td>Equipment</td>
+                            <td style="text-align:right;">@Model.EquipmentChargeAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                    @if (Model.ReplacementChargeAmount > 0)
+                    {
+                        <tr>
+                            <td>Replacement</td>
+                            <td style="text-align:right;">@Model.ReplacementChargeAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                    @if (Model.PreviousDue > 0)
+                    {
+                        <tr>
+                            <td>Previous due</td>
+                            <td style="text-align:right;">@Model.PreviousDue.ToString("N2")</td>
+                        </tr>
+                    }
+                    @if (Model.DiscountAmount > 0)
+                    {
+                        <tr>
+                            <td>Discount (@Model.DiscountPercent.ToString("0.##")%)</td>
+                            <td style="text-align:right;">- @Model.DiscountAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                    <tr>
+                        <td>Sub total</td>
+                        <td style="text-align:right;">@Model.SubTotal.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td>Service tax (@Model.TaxPercent.ToString("0.##")%)</td>
+                        <td style="text-align:right;">@Model.TaxAmount.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Total payable</td>
+                        <td class="fw-bold print-gold" style="text-align:right;">@Model.TotalAmount.ToString("N2") Rs</td>
+                    </tr>
+                    <tr>
+                        <td>Amount paid</td>
+                        <td style="text-align:right;">@Model.AmountPaid.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Amount due</td>
+                        <td class="fw-bold" style="text-align:right;">@Model.AmountDue.ToString("N2") Rs</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-4 pt-3" style="border-top:1px solid #d8d8de;">
+        <div class="fs-14">
+            <span class="fw-bold print-gold">Payment: cash on delivery / pay at counter.</span>
+            Nexus does not accept card or online payments. Please pay the amount due at the partner retail counter
+            and collect the printed receipt.
+        </div>
+        @if (Model.Payments.Any())
+        {
+            <div class="mt-3">
+                <div class="fs-14 fw-bold mb-2">Payments received</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Receipt number</th>
+                            <th>Date</th>
+                            <th>Received by</th>
+                            <th style="text-align:right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var payment in Model.Payments.OrderByDescending(p => p.PaidOn))
+                        {
+                            <tr>
+                                <td>@payment.ReceiptNumber</td>
+                                <td>@payment.PaidOn.ToString("dd MMM yyyy")</td>
+                                <td>@payment.ReceivedByName</td>
+                                <td style="text-align:right;">@payment.Amount.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Remarks))
+        {
+            <div class="mt-3 fs-14"><span class="fw-bold">Remarks:</span> @Model.Remarks</div>
+        }
+    </div>
+
+    <div class="d-flex justify-content-between mt-5 fs-14">
+        <div>Generated by @Model.GeneratedByName</div>
+        <div class="print-gold">Thank you for choosing Nexus</div>
+    </div>
+</div>

@@ -1,0 +1,56 @@
+@model List<Connection>
+@{
+    ViewData["Title"] = "My connections";
+}
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <rect x="60" y="45" width="80" height="50" rx="8" stroke="#d4af37" stroke-width="2" opacity=".55" />
+            <path d="M80 95v18M120 95v18M75 113h50" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+            <circle cx="85" cy="62" r="4" fill="#d4af37" opacity=".7" />
+            <circle cx="100" cy="62" r="4" fill="#d4af37" opacity=".5" />
+        </svg>
+        <div class="title">No connection yet</div>
+        <p class="text">Your connection appears here as soon as the partner has completed the installation.</p>
+        <a class="btn btn-gold" asp-area="Customer" asp-controller="Browse" asp-action="Index">Order a service</a>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var connection in Model)
+        {
+            <div class="col-md-6 col-xl-4">
+                <div class="plan-card glass">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="category-icon mb-0" style="width:46px;height:46px;font-size:1.2rem;"><i class="bi bi-router"></i></div>
+                        @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(connection.Status))
+                    </div>
+
+                    <h2 class="h6 mb-1">@connection.Plan?.Name</h2>
+                    <div class="mb-3"><span class="account-id-chip">@connection.AccountId</span></div>
+
+                    <div class="stat-line"><span class="k">City</span><span class="v">@connection.City?.Name</span></div>
+                    <div class="stat-line"><span class="k">Partner</span><span class="v">@connection.Vendor?.BusinessName</span></div>
+                    <div class="stat-line"><span class="k">Activated</span><span class="v">@connection.ActivationDate.ToString("dd MMM yyyy")</span></div>
+                    <div class="stat-line"><span class="k">Monthly charge</span><span class="v">@connection.MonthlyCharge.ToString("N2") Rs</span></div>
+                    <div class="stat-line"><span class="k">Equipment</span><span class="v">@connection.Equipment.Count item(s)</span></div>
+
+                    @if (!string.IsNullOrWhiteSpace(connection.StatusReason))
+                    {
+                        <div class="alert-nexus alert-warning mt-3">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <div class="fs-14">@connection.StatusReason</div>
+                        </div>
+                    }
+
+                    <a class="btn btn-gold w-100 mt-3" asp-area="Customer" asp-controller="Connections" asp-action="Details" asp-route-accountId="@connection.AccountId">
+                        Open the connection
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+}

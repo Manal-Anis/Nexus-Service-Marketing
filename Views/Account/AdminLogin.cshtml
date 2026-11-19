@@ -1,0 +1,52 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Administrator sign in";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+}
+
+<section class="container py-5">
+    <div class="auth-card glass admin-login-card" data-reveal>
+        <div class="text-center mb-4">
+            <span class="brand-mark mx-auto mb-3" style="width:58px;height:58px;font-size:1.5rem;"><i class="bi bi-shield-lock-fill"></i></span>
+            <span class="eyebrow d-block mb-1">Restricted area</span>
+            <h1 class="h4 mb-1">Administrator portal</h1>
+            <p class="text-muted-silver fs-14 mb-0">Only the administrators of Nexus Communication System can sign in here.</p>
+        </div>
+
+        <form method="post" asp-controller="Account" asp-action="AdminLogin" asp-route-returnUrl="@returnUrl">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label class="form-label" asp-for="Email">Administrator email</label>
+                <input asp-for="Email" class="form-control" autocomplete="username" placeholder="admin@nexus.com" />
+                <span asp-validation-for="Email" class="text-danger fs-14"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" asp-for="Password">Password</label>
+                <div class="password-wrapper">
+                    <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                    <button type="button" class="password-toggle" aria-label="Show the password"><i class="bi bi-eye"></i></button>
+                </div>
+                <span asp-validation-for="Password" class="text-danger fs-14"></span>
+            </div>
+
+            <div class="form-check mb-4">
+                <input class="form-check-input" asp-for="RememberMe" type="checkbox" />
+                <label class="form-check-label text-muted-silver fs-14" asp-for="RememberMe"></label>
+            </div>
+
+            <button type="submit" class="btn btn-gold w-100 btn-lg"><i class="bi bi-shield-check me-2"></i>Sign in as administrator</button>
+        </form>
+
+        <hr class="divider-gold my-4" />
+
+        <p class="text-center text-muted-silver fs-14 mb-0">
+            Not an administrator? <a asp-controller="Account" asp-action="Login">Customer and partner sign in</a>
+        </p>
+    </div>
+
+    <div class="auth-card-hint">
+        <partial name="_DemoAccess" model='"admin"' />
+    </div>
+</section>

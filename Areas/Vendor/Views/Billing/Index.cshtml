@@ -1,0 +1,111 @@
+@model List<Bill>
+@{
+    ViewData["Title"] = "Billing";
+    var currentStatus = ViewData["CurrentStatus"] as string;
+    var total = Model.Sum(b => b.TotalAmount);
+    var due = Model.Where(b => b.Status == BillStatus.Due).Sum(b => b.AmountDue);
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-file-earmark-text"></i></span>
+            <div class="kpi-label">Invoices</div>
+            <div class="kpi-value">@Model.Count</div>
+            <div class="kpi-delta">raised by your desk</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-cash-stack"></i></span>
+            <div class="kpi-label">Total billed</div>
+            <div class="kpi-value">@total.ToString("N0")</div>
+            <div class="kpi-delta">Rupees on the invoices</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+            <div class="kpi-label">Outstanding</div>
+            <div class="kpi-value">@due.ToString("N0")</div>
+            <div class="kpi-delta">Rupees still to be collected</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-hourglass-split"></i></span>
+            <div class="kpi-label">Open invoices</div>
+            <div class="kpi-value">@Model.Count(b => b.Status == BillStatus.Due)</div>
+            <div class="kpi-delta">awaiting the cash</div>
+        </div>
+    </div>
+</div>
+
+<div class="glass p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="kpi-label me-2">Filter</span>
+        <a class="btn btn-sm @(string.IsNullOrEmpty(currentStatus) ? "btn-gold" : "btn-ghost")"
+           asp-area="Vendor" asp-controller="Billing" asp-action="Index">All</a>
+        @foreach (var status in Enum.GetValues<BillStatus>())
+        {
+            <a class="btn btn-sm @(currentStatus == status.ToString() ? "btn-gold" : "btn-ghost")"
+               asp-area="Vendor" asp-controller="Billing" asp-action="Index" asp-route-status="@status">@status.ToDisplayName()</a>
+        }
+        <a class="btn btn-gold btn-sm ms-auto" asp-area="Vendor" asp-controller="Billing" asp-action="Create">
+            <i class="bi bi-file-earmark-plus me-1"></i>Generate a bill
+        </a>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <rect x="45" y="30" width="110" height="100" rx="10" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M65 60h70M65 80h70M65 100h40" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No invoice in this view</div>
+        <p class="text">Raise the periodic bill of a connection to see it here.</p>
+        <a class="btn btn-gold" asp-area="Vendor" asp-controller="Billing" asp-action="Create">Generate a bill</a>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Bill number</th>
+                    <th>Account</th>
+                    <th>Customer</th>
+                    <th>Type</th>
+                    <th>Period</th>
+                    <th>Due date</th>
+                    <th>Status</th>
+                    <th class="num">Total</th>
+                    <th class="num">Due</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var bill in Model)
+                {
+                    <tr>
+                        <td class="text-silver">@bill.BillNumber</td>
+                        <td><span class="account-id-chip">@bill.Connection?.AccountId</span></td>
+                        <td class="fs-14">@bill.Connection?.Customer?.FullName</td>
+                        <td class="fs-14 text-muted-silver">@bill.BillType.ToDisplayName()</td>
+                        <td class="fs-14 text-muted-silver">@bill.PeriodStart.ToString("dd MMM") – @bill.PeriodEnd.ToString("dd MMM yyyy")</td>
+                        <td class="fs-14">@bill.DueDate.ToString("dd MMM yyyy")</td>
+                        <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(bill.Status))</td>
+                        <td class="num text-silver">@bill.TotalAmount.ToString("N2")</td>
+                        <td class="num @(bill.AmountDue > 0 ? "text-danger-silver" : "text-muted-silver")">@bill.AmountDue.ToString("N2")</td>
+                        <td class="text-end">
+                            <a class="btn btn-ghost btn-sm" asp-area="Vendor" asp-controller="Billing" asp-action="Details" asp-route-id="@bill.Id">Open</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

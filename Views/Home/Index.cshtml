@@ -1,0 +1,399 @@
+@model HomeViewModel
+@{
+    ViewData["Title"] = "Nexus - Dial-up, Broadband and Landline Connections";
+    var categories = Model.Categories;
+    var dialUp = categories.FirstOrDefault(c => c.Code == "D");
+    var broadband = categories.FirstOrDefault(c => c.Code == "B");
+    var landline = categories.FirstOrDefault(c => c.Code == "T");
+}
+
+<!-- ================================================================ hero -->
+<section class="hero">
+    <div class="orb-stage">
+        <span class="orb orb-gold orb-1"></span>
+        <span class="orb orb-silver orb-2"></span>
+        <span class="orb orb-deep orb-3"></span>
+    </div>
+
+    <div class="container position-relative">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7">
+                <span class="hero-badge mb-4" data-reveal="0">
+                    <i class="bi bi-shield-check text-gold"></i> Cash on delivery &middot; no card needed
+                </span>
+
+                <h1 class="hero-title mb-3" data-reveal="80">
+                    Internet and voice, <span class="gold-text">installed at your door</span>
+                </h1>
+
+                <p class="section-lead mb-4" data-reveal="140">
+                    Nexus connects homes, students and businesses with dial-up internet, broadband and landline
+                    services. Order online, a Nexus retail partner surveys your street, and you pay the
+                    installer in cash when the connection goes live.
+                </p>
+
+                <div class="d-flex flex-wrap gap-3" data-reveal="200">
+                    <a class="btn btn-gold btn-lg" asp-controller="Home" asp-action="Plans">
+                        <i class="bi bi-collection me-2"></i>Explore the plans
+                    </a>
+                    <a class="btn btn-outline-gold btn-lg" asp-controller="Home" asp-action="CheckConnection">
+                        <i class="bi bi-router me-2"></i>Check my address
+                    </a>
+                </div>
+
+                <div class="hero-stat-row" data-reveal="260">
+                    <div class="hero-stat">
+                        <div class="value"><span class="counter" data-count="@Model.CustomerCount">0</span></div>
+                        <div class="label">Customers served</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="value"><span class="counter" data-count="@Model.ConnectionCount">0</span></div>
+                        <div class="label">Live connections</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="value"><span class="counter" data-count="@Model.VendorCount">0</span></div>
+                        <div class="label">Retail partners</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="value"><span class="counter" data-count="@Model.CityCount">0</span></div>
+                        <div class="label">Cities covered</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="hero-visual glass tilt" data-reveal="200">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="h5 mb-0">Your service plan</h2>
+                        <span class="badge-status badge-success">Available</span>
+                    </div>
+
+                    <div class="d-grid gap-3">
+                        @if (dialUp is not null)
+                        {
+                            <div class="doc-tile">
+                                <span class="icon"><i class="bi bi-dial-up"></i></span>
+                                <div class="flex-grow-1">
+                                    <div class="text-silver fw-600">@dialUp.Name</div>
+                                    <small class="text-muted-silver">Hourly packs from @dialUp.SecurityDeposit.ToString("N0") Rs deposit</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted-silver"></i>
+                            </div>
+                        }
+                        @if (broadband is not null)
+                        {
+                            <div class="doc-tile">
+                                <span class="icon"><i class="bi bi-wifi"></i></span>
+                                <div class="flex-grow-1">
+                                    <div class="text-silver fw-600">@broadband.Name</div>
+                                    <small class="text-muted-silver">Up to 128 Kbps, monthly or quarterly</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted-silver"></i>
+                            </div>
+                        }
+                        @if (landline is not null)
+                        {
+                            <div class="doc-tile">
+                                <span class="icon"><i class="bi bi-telephone"></i></span>
+                                <div class="flex-grow-1">
+                                    <div class="text-silver fw-600">@landline.Name</div>
+                                    <small class="text-muted-silver">Local, STD and mobile messaging rates</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted-silver"></i>
+                            </div>
+                        }
+                    </div>
+
+                    <hr class="divider-gold my-4" />
+
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="brand-mark"><i class="bi bi-cash-coin"></i></span>
+                        <div>
+                            <div class="text-silver fw-600">Pay at the counter</div>
+                            <small class="text-muted-silver">The installer collects the invoice in cash.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================ categories -->
+<section class="container py-5">
+    <div class="text-center mb-5" data-reveal>
+        <span class="eyebrow">What we deliver</span>
+        <h2 class="section-title mt-2">Three ways to stay connected</h2>
+        <p class="section-lead mx-auto mt-2">Every plan is installed by the Nexus partner closest to you and billed on delivery.</p>
+    </div>
+
+    <div class="row g-4">
+        @foreach (var category in categories)
+        {
+            <div class="col-md-4" data-reveal>
+                <div class="category-card glass glass-hover">
+                    <div class="category-icon"><i class="bi @category.Icon"></i></div>
+                    <h3 class="h5">@category.Name</h3>
+                    <p class="text-muted-silver fs-14">@category.Description</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="badge-status badge-gold">Security deposit @category.SecurityDeposit.ToString("N0") Rs</span>
+                        <a class="text-gold" asp-controller="Home" asp-action="Plans" asp-route-category="@category.Code">
+                            View plans <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- ================================================================ featured plans -->
+<section class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4" data-reveal>
+        <div>
+            <span class="eyebrow">Popular right now</span>
+            <h2 class="section-title mt-2 mb-0">Featured plans</h2>
+        </div>
+        <a class="btn btn-outline-gold" asp-controller="Home" asp-action="Plans">See every plan <i class="bi bi-arrow-right ms-1"></i></a>
+    </div>
+
+    <div class="glass-tabs mb-4" data-tab-group="plans" data-reveal>
+        <button class="glass-tab active" data-tab-target="all">All services</button>
+        @foreach (var category in categories)
+        {
+            <button class="glass-tab" data-tab-target="@category.Code">@category.Name</button>
+        }
+    </div>
+
+    @foreach (var category in categories)
+    {
+        var categoryPlans = Model.FeaturedPlans.Where(p => p.CategoryId == category.Id).ToList();
+        if (categoryPlans.Count == 0) continue;
+
+        <div class="row g-4 @(category.Code == categories.First().Code ? "" : "d-none")" data-tab-pane="@category.Code">
+            @foreach (var plan in categoryPlans)
+            {
+                <div class="col-md-6 col-xl-4">
+                    <div class="plan-card glass">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="category-icon mb-0" style="width:46px;height:46px;font-size:1.2rem;"><i class="bi @plan.Icon"></i></div>
+                            <span class="badge-status badge-gold">@plan.BillingPeriod.ToDisplayName()</span>
+                        </div>
+
+                        <h3 class="h5 mb-1">@plan.Name</h3>
+                        <p class="text-muted-silver fs-14 mb-3">@plan.Description</p>
+
+                        <div class="plan-price mb-3">
+                            <span class="currency">Rs</span> @plan.Price.ToString("N0")
+                        </div>
+
+                        <div class="mt-auto">
+                            @if (plan.Hours.HasValue)
+                            {
+                                <div class="plan-spec"><span class="k">Included hours</span><span class="v">@plan.Hours h</span></div>
+                            }
+                            @if (plan.SpeedKbps.HasValue)
+                            {
+                                <div class="plan-spec"><span class="k">Speed</span><span class="v">@plan.SpeedKbps Kbps</span></div>
+                            }
+                            <div class="plan-spec"><span class="k">Billing</span><span class="v">@plan.BillingPeriod.ToDisplayName()</span></div>
+
+                            <a class="btn btn-gold w-100 mt-3" asp-controller="Home" asp-action="PlanDetails" asp-route-id="@plan.Id">
+                                View details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="row g-4 d-none" data-tab-pane="all">
+        @foreach (var plan in Model.FeaturedPlans)
+        {
+            <div class="col-md-6 col-xl-4">
+                <div class="plan-card glass">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="category-icon mb-0" style="width:46px;height:46px;font-size:1.2rem;"><i class="bi @plan.Icon"></i></div>
+                        <span class="badge-status badge-gold">@plan.Category.Name</span>
+                    </div>
+                    <h3 class="h5 mb-1">@plan.Name</h3>
+                    <p class="text-muted-silver fs-14 mb-3">@plan.Description</p>
+                    <div class="plan-price mb-3"><span class="currency">Rs</span> @plan.Price.ToString("N0")</div>
+                    <a class="btn btn-gold w-100 mt-auto" asp-controller="Home" asp-action="PlanDetails" asp-route-id="@plan.Id">View details</a>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- ================================================================ how it works -->
+<section class="container py-5">
+    <div class="text-center mb-5" data-reveal>
+        <span class="eyebrow">How it works</span>
+        <h2 class="section-title mt-2">Four steps to a live line</h2>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6 col-xl-3" data-reveal="0">
+            <div class="step-card glass">
+                <div class="step-number">01</div>
+                <h3 class="h6 mt-2">Pick a plan</h3>
+                <p class="text-muted-silver fs-14 mb-0">Choose dial-up, broadband or landline and place the order online.</p>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3" data-reveal="80">
+            <div class="step-card glass">
+                <div class="step-number">02</div>
+                <h3 class="h6 mt-2">Feasibility survey</h3>
+                <p class="text-muted-silver fs-14 mb-0">Our technical team checks the exchange and the server at your street.</p>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3" data-reveal="160">
+            <div class="step-card glass">
+                <div class="step-number">03</div>
+                <h3 class="h6 mt-2">Installation</h3>
+                <p class="text-muted-silver fs-14 mb-0">The partner installs the modem, the router and the wiring, then tests the line.</p>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3" data-reveal="240">
+            <div class="step-card glass">
+                <div class="step-number">04</div>
+                <h3 class="h6 mt-2">Pay in cash</h3>
+                <p class="text-muted-silver fs-14 mb-0">You receive the activation invoice and settle it with the installer.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================ vendors -->
+@if (Model.Vendors.Count > 0)
+{
+    <section class="container py-5">
+        <div class="text-center mb-5" data-reveal>
+            <span class="eyebrow">Our network</span>
+            <h2 class="section-title mt-2">Retail partners</h2>
+            <p class="section-lead mx-auto mt-2">Approved Nexus partners install and maintain the service in your area.</p>
+        </div>
+
+        <div class="row g-4">
+            @foreach (var vendor in Model.Vendors)
+            {
+                <div class="col-6 col-lg-3" data-reveal>
+                    <div class="vendor-card glass glass-hover">
+                        <div class="vendor-logo"><i class="bi bi-shop"></i></div>
+                        <h3 class="h6 mb-1">@vendor.BusinessName</h3>
+                        <p class="text-muted-silver fs-14 mb-2">@vendor.City?.Name</p>
+                        <span class="badge-status badge-success">Approved</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- ================================================================ testimonials -->
+@if (Model.Testimonials.Count > 0)
+{
+    <section class="container py-5">
+        <div class="text-center mb-5" data-reveal>
+            <span class="eyebrow">Customer voices</span>
+            <h2 class="section-title mt-2">What our customers say</h2>
+        </div>
+
+        <div class="row g-4">
+            @foreach (var feedback in Model.Testimonials)
+            {
+                <div class="col-md-6 col-xl-4" data-reveal>
+                    <div class="testimonial-card glass">
+                        <div class="star-row">
+                            @for (var i = 0; i < feedback.Rating; i++)
+                            {
+                                <i class="bi bi-star-fill"></i>
+                            }
+                        </div>
+                        <blockquote>"@feedback.Comments"</blockquote>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="brand-mark" style="width:38px;height:38px;font-size:.9rem;border-radius:11px;">
+                                @feedback.Customer.FullName.Substring(0, 1).ToUpperInvariant()
+                            </span>
+                            <div>
+                                <div class="text-silver fw-600 fs-14">@feedback.Customer.FullName</div>
+                                <small class="text-muted-silver">@feedback.CreatedAt.ToString("MMMM yyyy")</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- ================================================================ faq -->
+<section class="container py-5">
+    <div class="row g-5">
+        <div class="col-lg-5" data-reveal>
+            <span class="eyebrow">FAQ</span>
+            <h2 class="section-title mt-2">Questions we hear every day</h2>
+            <p class="section-lead mt-3">Cannot find the answer? Write to us and our support desk replies within one working day.</p>
+            <a class="btn btn-outline-gold mt-2" asp-controller="Home" asp-action="Contact"><i class="bi bi-chat-dots me-2"></i>Contact support</a>
+        </div>
+
+        <div class="col-lg-7" data-reveal="120">
+            <div class="glass p-4">
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        How do I pay for my connection?
+                        <i class="bi bi-chevron-down chev"></i>
+                    </button>
+                    <div class="faq-answer"><p class="text-muted-silver py-3 mb-0">Nexus is a cash on delivery network. The installer collects the activation invoice in cash, and you settle every periodic bill at the retail counter of your Nexus partner. There is no card, no wallet and no online gateway.</p></div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        What is a bulk discount?
+                        <i class="bi bi-chevron-down chev"></i>
+                    </button>
+                    <div class="faq-answer"><p class="text-muted-silver py-3 mb-0">When one order carries several connections the advance payment and the security deposit are discounted: 10 to 15 connections get 25 percent, 16 to 25 get 50 percent, 26 to 50 get 75 percent and 51 or more get the full 100 percent.</p></div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        How long does the installation take?
+                        <i class="bi bi-chevron-down chev"></i>
+                    </button>
+                    <div class="faq-answer"><p class="text-muted-silver py-3 mb-0">A feasible address is usually connected within two working days. Dial-up orders that need a new landline carry two feasibility checks, so allow one extra day for the exchange survey.</p></div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        Why is my connection temporarily inactive?
+                        <i class="bi bi-chevron-down chev"></i>
+                    </button>
+                    <div class="faq-answer"><p class="text-muted-silver py-3 mb-0">A bill that stays unpaid past the grace period of 30 days flags the connection as overdue and the line is switched to temporarily inactive. As soon as the dues are cleared the partner reactivates the service.</p></div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        Is the security deposit refundable?
+                        <i class="bi bi-chevron-down chev"></i>
+                    </button>
+                    <div class="faq-answer"><p class="text-muted-silver py-3 mb-0">Yes. The deposit is held on your account ledger while the connection is live and is refunded when the line is permanently closed and the equipment is returned.</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================ cta -->
+<section class="container py-5">
+    <div class="cta-band glass text-center" data-reveal>
+        <h2 class="section-title mb-3">Ready for a faster line?</h2>
+        <p class="section-lead mx-auto mb-4">Register once and order dial-up, broadband or landline from your own dashboard. Pay the installer in cash.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-3">
+            <a class="btn btn-gold btn-lg" asp-controller="Account" asp-action="Register">Create an account</a>
+            <a class="btn btn-outline-gold btn-lg" asp-controller="Account" asp-action="RegisterVendor"><i class="bi bi-shop me-2"></i>Join as a partner</a>
+            <a class="btn btn-outline-gold btn-lg" asp-controller="Home" asp-action="TrackOrder">Track my order</a>
+        </div>
+    </div>
+</section>

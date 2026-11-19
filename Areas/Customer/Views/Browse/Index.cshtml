@@ -1,0 +1,86 @@
+@model PlansViewModel
+@{
+    ViewData["Title"] = "Browse the plans";
+}
+
+<div class="filter-bar glass mb-4">
+    <form method="get" asp-area="Customer" asp-controller="Browse" asp-action="Index" class="row g-3 align-items-end">
+        <div class="col-lg-4 col-md-6">
+            <label class="form-label" for="search">Search</label>
+            <input type="search" class="form-control" id="search" name="search" value="@Model.Search" placeholder="Broadband, STD, hourly..." />
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label" for="category">Service</label>
+            <select class="form-select" id="category" name="category">
+                <option value="">All services</option>
+                @foreach (var category in Model.Categories)
+                {
+                    <option value="@category.Code" selected="@(Model.CategoryCode == category.Code)">@category.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label" for="period">Billing period</label>
+            <select class="form-select" id="period" name="period">
+                <option value="">Any period</option>
+                @foreach (var period in Model.BillingPeriods)
+                {
+                    <option value="@period" selected="@(Model.BillingPeriod == period.ToString())">@period.ToDisplayName()</option>
+                }
+            </select>
+        </div>
+        <div class="col-lg-2 col-md-6 d-grid">
+            <button class="btn btn-gold" type="submit"><i class="bi bi-funnel me-1"></i>Filter</button>
+        </div>
+    </form>
+</div>
+
+@if (Model.Plans.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <circle cx="100" cy="80" r="58" stroke="#d4af37" stroke-width="2" opacity=".45" />
+            <path d="M78 80h44" stroke="#d4af37" stroke-width="3" stroke-linecap="round" />
+        </svg>
+        <div class="title">No plan matches the filter</div>
+        <p class="text">Clear the filters to see the whole catalogue.</p>
+        <a class="btn btn-outline-gold" asp-area="Customer" asp-controller="Browse" asp-action="Index">Reset the filters</a>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var plan in Model.Plans)
+        {
+            <div class="col-md-6 col-xl-4">
+                <div class="plan-card glass">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="category-icon mb-0" style="width:46px;height:46px;font-size:1.2rem;"><i class="bi @plan.Icon"></i></div>
+                        <span class="badge-status badge-gold">@plan.BillingPeriod.ToDisplayName()</span>
+                    </div>
+
+                    <h2 class="h5 mb-1">@plan.Name</h2>
+                    <p class="text-muted-silver fs-14 mb-3">@plan.Description</p>
+
+                    <div class="plan-price mb-3"><span class="currency">Rs</span> @plan.Price.ToString("N0")</div>
+
+                    <div class="mt-auto">
+                        @if (plan.Hours.HasValue)
+                        {
+                            <div class="plan-spec"><span class="k">Included hours</span><span class="v">@plan.Hours h</span></div>
+                        }
+                        @if (plan.SpeedKbps.HasValue)
+                        {
+                            <div class="plan-spec"><span class="k">Speed</span><span class="v">@plan.SpeedKbps Kbps</span></div>
+                        }
+                        <div class="plan-spec"><span class="k">Billing</span><span class="v">@plan.BillingPeriod.ToDisplayName()</span></div>
+
+                        <a class="btn btn-gold w-100 mt-3" asp-area="Customer" asp-controller="Browse" asp-action="PlaceOrder" asp-route-planId="@plan.Id">
+                            <i class="bi bi-bag-plus me-1"></i>Order this plan
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

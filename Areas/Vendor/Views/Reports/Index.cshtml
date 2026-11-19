@@ -1,0 +1,210 @@
+@model VendorReportsViewModel
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="glass p-3 mb-4">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+        <div>
+            <label class="form-label mb-1" for="from">From</label>
+            <input class="form-control" id="from" type="date" name="from" value="@Model.From" />
+        </div>
+        <div>
+            <label class="form-label mb-1" for="to">To</label>
+            <input class="form-control" id="to" type="date" name="to" value="@Model.To" />
+        </div>
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-funnel me-1"></i>Apply</button>
+        <a class="btn btn-ghost" asp-area="Vendor" asp-controller="Reports" asp-action="ExportOrders" asp-route-from="@Model.From" asp-route-to="@Model.To">
+            <i class="bi bi-filetype-csv me-1"></i>Orders CSV
+        </a>
+        <a class="btn btn-ghost" asp-area="Vendor" asp-controller="Reports" asp-action="ExportBills" asp-route-from="@Model.From" asp-route-to="@Model.To">
+            <i class="bi bi-filetype-csv me-1"></i>Invoices CSV
+        </a>
+        <button class="btn btn-ghost" type="button" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>Print
+        </button>
+    </form>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-receipt"></i></span>
+            <div class="kpi-label">Orders</div>
+            <div class="kpi-value">@Model.TotalOrders</div>
+            <div class="kpi-delta">@Model.CancelledOrders cancelled</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-router"></i></span>
+            <div class="kpi-label">New connections</div>
+            <div class="kpi-value">@Model.TotalConnections</div>
+            <div class="kpi-delta">activated in the period</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-file-earmark-text"></i></span>
+            <div class="kpi-label">Billed</div>
+            <div class="kpi-value">@Model.TotalBilled.ToString("N0")</div>
+            <div class="kpi-delta">tax @Model.TotalTax.ToString("N0") Rs</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-cash-stack"></i></span>
+            <div class="kpi-label">Collected</div>
+            <div class="kpi-value">@Model.TotalCollected.ToString("N0")</div>
+            <div class="kpi-delta">@Model.TotalOutstanding.ToString("N0") Rs outstanding</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-6">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">Orders per service</h2>
+            @if (Model.OrdersByCategory.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No order was placed in the selected period.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th class="num">Orders</th>
+                                <th class="num">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.OrdersByCategory)
+                            {
+                                <tr>
+                                    <td class="text-silver">@row.Category</td>
+                                    <td class="num">@row.Orders</td>
+                                    <td class="num text-silver">@row.Amount.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">Orders per state</h2>
+            @if (Model.OrdersByStatus.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No order was placed in the selected period.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>State</th>
+                                <th class="num">Orders</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.OrdersByStatus)
+                            {
+                                <tr>
+                                    <td class="text-silver">@row.Status</td>
+                                    <td class="num">@row.Count</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="glass p-4 mb-4">
+    <h2 class="h6 mb-3">Collection over the months</h2>
+    <div style="height:260px">
+        <canvas id="chartReportCollection"></canvas>
+    </div>
+</div>
+
+<div class="glass p-4">
+    <h2 class="h6 mb-3">The order book</h2>
+    @if (Model.Orders.Count == 0)
+    {
+        <p class="text-muted-silver fs-14 mb-0">No order was placed in the selected period.</p>
+    }
+    else
+    {
+        <div class="table-wrap table-wrap-lg">
+            <table class="table-glass">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Service</th>
+                        <th>Status</th>
+                        <th class="num">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model.Orders)
+                    {
+                        <tr>
+                            <td><span class="order-id-chip">@order.OrderId</span></td>
+                            <td class="fs-14">@order.PlacedAt.ToString("dd MMM yyyy")</td>
+                            <td class="fs-14">@order.Customer?.FullName</td>
+                            <td class="fs-14 text-muted-silver">@order.Plan?.Category?.Name</td>
+                            <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(order.Status))</td>
+                            <td class="num text-silver">@order.TotalAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var canvas = document.getElementById('chartReportCollection');
+            if (!canvas) return;
+
+            var colors = window.nexusChartColors;
+            var labels = @Html.Raw(Json.Serialize(Model.MonthlyCollection.Select(m => m.Month).ToList()));
+            var values = @Html.Raw(Json.Serialize(Model.MonthlyCollection.Select(m => m.Collected).ToList()));
+
+            window.nexusChart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Collected (Rs)',
+                        data: values,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        backgroundColor: function (context) {
+                            var chart = context.chart;
+                            if (!chart.chartArea) return 'rgba(212,175,55,0.7)';
+                            return window.nexusChartGradient(chart.ctx, chart.chartArea, 'rgba(243,223,138,0.95)', 'rgba(138,109,29,0.55)');
+                        }
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false } } }
+                }
+            });
+        });
+    </script>
+}

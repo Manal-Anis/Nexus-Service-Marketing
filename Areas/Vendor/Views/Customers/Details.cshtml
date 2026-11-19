@@ -1,0 +1,186 @@
+@model VendorCustomerDetailsViewModel
+@{
+    ViewData["Title"] = Model.Customer.FullName;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h2 class="h4 mb-1">@Model.Customer.FullName</h2>
+        <p class="text-muted-silver fs-14 mb-0">
+            <i class="bi bi-telephone me-1"></i>@Model.Customer.Phone
+            <span class="mx-2">|</span>
+            <i class="bi bi-envelope me-1"></i>@Model.Customer.Email
+            <span class="mx-2">|</span>
+            <i class="bi bi-geo-alt me-1"></i>@Model.Customer.City?.Name
+        </p>
+    </div>
+    <a class="btn btn-ghost btn-sm" asp-area="Vendor" asp-controller="Customers" asp-action="Index">
+        <i class="bi bi-arrow-left me-1"></i>Back to the customers
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-receipt"></i></span>
+            <div class="kpi-label">Orders</div>
+            <div class="kpi-value">@Model.Orders.Count</div>
+            <div class="kpi-delta">placed with your desk</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-router"></i></span>
+            <div class="kpi-label">Connections</div>
+            <div class="kpi-value">@Model.Connections.Count</div>
+            <div class="kpi-delta">live services</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-file-earmark-text"></i></span>
+            <div class="kpi-label">Billed</div>
+            <div class="kpi-value">@Model.TotalBilled.ToString("N0")</div>
+            <div class="kpi-delta">@Model.TotalPaid.ToString("N0") Rs collected</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+            <div class="kpi-label">Outstanding</div>
+            <div class="kpi-value">@Model.TotalDue.ToString("N0")</div>
+            <div class="kpi-delta">Rupees still to be collected</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="glass p-4 mb-4">
+            <h2 class="h5 mb-3">Orders</h2>
+            @if (Model.Orders.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">This customer has not placed an order yet.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Plan</th>
+                                <th>Placed</th>
+                                <th>Status</th>
+                                <th class="num">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model.Orders)
+                            {
+                                <tr>
+                                    <td>
+                                        <a class="text-decoration-none" asp-area="Vendor" asp-controller="Orders" asp-action="Details" asp-route-id="@order.OrderId">
+                                            <span class="order-id-chip">@order.OrderId</span>
+                                        </a>
+                                    </td>
+                                    <td class="fs-14">@order.Plan?.Name</td>
+                                    <td class="fs-14">@order.PlacedAt.ToString("dd MMM yyyy")</td>
+                                    <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(order.Status))</td>
+                                    <td class="num text-silver">@order.TotalAmount.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="glass p-4 mb-4">
+            <h2 class="h5 mb-3">Connections</h2>
+            @if (Model.Connections.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No connection has been activated for this customer.</p>
+            }
+            else
+            {
+                <div class="d-grid gap-2">
+                    @foreach (var connection in Model.Connections)
+                    {
+                        <a class="doc-tile text-decoration-none" asp-area="Vendor" asp-controller="Connections" asp-action="Details" asp-route-id="@connection.Id">
+                            <span class="icon"><i class="bi bi-router"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600">@connection.Plan?.Name</div>
+                                <small class="text-muted-silver"><span class="account-id-chip">@connection.AccountId</span> - activated @connection.ActivationDate.ToString("dd MMM yyyy")</small>
+                            </div>
+                            @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(connection.Status))
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">Documents</h2>
+            @if (Model.Documents.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">The customer has not uploaded any document yet.</p>
+            }
+            else
+            {
+                <div class="d-grid gap-2">
+                    @foreach (var document in Model.Documents)
+                    {
+                        <div class="doc-tile">
+                            <span class="icon"><i class="bi bi-file-earmark-text"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600 fs-14">@document.OriginalFileName</div>
+                                <small class="text-muted-silver">
+                                    @document.DocumentType - @document.Order?.OrderId - @((document.FileSizeBytes / 1024.0).ToString("0")) KB
+                                </small>
+                            </div>
+                            <a class="btn btn-ghost btn-sm" asp-area="Vendor" asp-controller="Customers" asp-action="Document" asp-route-id="@document.Id">
+                                <i class="bi bi-download"></i>
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">Invoices</h2>
+
+            @if (Model.Bills.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No invoice has been raised yet.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Bill</th>
+                                <th>Status</th>
+                                <th class="num">Due</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var bill in Model.Bills)
+                            {
+                                <tr>
+                                    <td class="fs-14 text-silver">@bill.BillNumber</td>
+                                    <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(bill.Status))</td>
+                                    <td class="num @(bill.AmountDue > 0 ? "text-danger-silver" : "text-muted-silver")">@bill.AmountDue.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,151 @@
+@model Connection
+@{
+    ViewData["Title"] = $"Connection {Model.AccountId}";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <span class="account-id-chip fs-6">@Model.AccountId</span>
+        @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(Model.Status))
+    </div>
+    <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Connections" asp-action="Index">
+        <i class="bi bi-arrow-left me-1"></i>Back to my connections
+    </a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusReason))
+{
+    <div class="alert-nexus alert-warning mb-4">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div>
+            <strong>@Model.Status.ToDisplayName()</strong>
+            <div class="fs-14">@Model.StatusReason</div>
+            @if (Model.StatusChangedAt.HasValue)
+            {
+                <div class="fs-14">Changed on @Model.StatusChangedAt.Value.ToString("dd MMM yyyy, hh:mm tt")</div>
+            }
+        </div>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <!-- ------------------------------------------------------------- bills -->
+        <div class="glass p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Invoices</h2>
+                <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Bills" asp-action="Index">All bills</a>
+            </div>
+
+            @if (Model.Bills.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No invoice has been issued for this connection yet.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Bill</th>
+                                <th>Type</th>
+                                <th>Due date</th>
+                                <th>Status</th>
+                                <th class="num">Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var bill in Model.Bills.OrderByDescending(b => b.GeneratedOn))
+                            {
+                                <tr>
+                                    <td class="text-silver">@bill.BillNumber</td>
+                                    <td class="fs-14">@bill.BillType.ToDisplayName()</td>
+                                    <td class="fs-14">@bill.DueDate.ToString("dd MMM yyyy")</td>
+                                    <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(bill.Status))</td>
+                                    <td class="num text-silver">@bill.TotalAmount.ToString("N2")</td>
+                                    <td class="text-end">
+                                        <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Bills" asp-action="Details" asp-route-billNumber="@bill.BillNumber">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- ------------------------------------------------------------- plan changes -->
+        @if (Model.PlanChanges.Count > 0)
+        {
+            <div class="glass p-4">
+                <h2 class="h5 mb-3">Plan changes</h2>
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var change in Model.PlanChanges.OrderByDescending(c => c.RequestedAt))
+                            {
+                                <tr>
+                                    <td class="fs-14">@change.OldPlan?.Name</td>
+                                    <td class="fs-14 text-silver">@change.NewPlan?.Name</td>
+                                    <td class="fs-14">@change.RequestedAt.ToString("dd MMM yyyy")</td>
+                                    <td class="fs-14">@change.Status.ToDisplayName()</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-5">
+        <div class="glass p-4 mb-4">
+            <h2 class="h5 mb-3">Service</h2>
+            <div class="stat-line"><span class="k">Plan</span><span class="v">@Model.Plan?.Name</span></div>
+            <div class="stat-line"><span class="k">Service type</span><span class="v">@Model.Plan?.Category?.Name</span></div>
+            <div class="stat-line"><span class="k">Monthly charge</span><span class="v">@Model.MonthlyCharge.ToString("N2") Rs</span></div>
+            <div class="stat-line"><span class="k">Security deposit</span><span class="v">@Model.SecurityDeposit.ToString("N2") Rs</span></div>
+            <div class="stat-line"><span class="k">Activated</span><span class="v">@Model.ActivationDate.ToString("dd MMM yyyy")</span></div>
+            <div class="stat-line"><span class="k">Address</span><span class="v">@Model.InstallationAddress</span></div>
+            <div class="stat-line"><span class="k">Contact</span><span class="v">@Model.ContactNumber</span></div>
+        </div>
+
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">Equipment</h2>
+            @if (Model.Equipment.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No equipment is registered on this connection.</p>
+            }
+            else
+            {
+                <div class="d-grid gap-2">
+                    @foreach (var equipment in Model.Equipment)
+                    {
+                        <div class="doc-tile">
+                            <span class="icon"><i class="bi @equipment.Product?.Icon"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600 fs-14">@equipment.Product?.Name</div>
+                                <small class="text-muted-silver">@equipment.SerialNumber</small>
+                            </div>
+                            @if (equipment.IsReplaced)
+                            {
+                                <span class="badge-status badge-muted">Replaced</span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

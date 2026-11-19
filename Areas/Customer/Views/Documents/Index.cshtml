@@ -1,0 +1,96 @@
+@model DocumentUploadViewModel
+@{
+    ViewData["Title"] = "My documents";
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <!-- ------------------------------------------------------------ upload form -->
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">Upload a document</h2>
+            <p class="text-muted-silver fs-14">
+                The file is stored outside the public web folder and can only be opened by you and the
+                partner that handles your order.
+            </p>
+
+            <form method="post" asp-area="Customer" asp-controller="Documents" asp-action="Upload" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="mb-3">
+                    <label class="form-label" asp-for="OrderId">Related order</label>
+                    <select asp-for="OrderId" class="form-select">
+                        <option value="">Without an order</option>
+                        @foreach (var order in Model.Orders)
+                        {
+                            <option value="@order.Id">@order.OrderId - @order.Plan?.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" asp-for="DocumentType">Document type</label>
+                    <select asp-for="DocumentType" class="form-select">
+                        <option>Identity proof</option>
+                        <option>Address proof</option>
+                        <option>Application form</option>
+                        <option>Authorization letter</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" asp-for="File">File</label>
+                    <input asp-for="File" class="form-control" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                    <span asp-validation-for="File" class="text-danger fs-14"></span>
+                    <div class="form-text text-muted-silver">PDF, JPG or PNG. Maximum 2 MB.</div>
+                </div>
+
+                <button type="submit" class="btn btn-gold w-100">
+                    <i class="bi bi-cloud-arrow-up me-1"></i>Upload the document
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <!-- ------------------------------------------------------------ document list -->
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">Uploaded documents</h2>
+
+            @if (Model.Documents.Count == 0)
+            {
+                <div class="empty-state">
+                    <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+                        <path d="M70 35h40l20 20v70H70z" stroke="#d4af37" stroke-width="2" opacity=".55" />
+                        <path d="M110 35v20h20" stroke="#c9ccd3" stroke-width="2" opacity=".45" />
+                    </svg>
+                    <div class="title">No document uploaded</div>
+                    <p class="text">Upload your identity proof so the partner can complete the installation.</p>
+                </div>
+            }
+            else
+            {
+                <div class="d-grid gap-2">
+                    @foreach (var document in Model.Documents)
+                    {
+                        <div class="doc-tile">
+                            <span class="icon"><i class="bi bi-file-earmark-text"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="text-silver fw-600 fs-14">@document.OriginalFileName</div>
+                                <small class="text-muted-silver">
+                                    @document.DocumentType ·
+                                    @document.Order?.OrderId ·
+                                    @document.UploadedAt.ToString("dd MMM yyyy") ·
+                                    @((document.FileSizeBytes / 1024d).ToString("0")) KB
+                                </small>
+                            </div>
+                            <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Documents" asp-action="Download" asp-route-id="@document.Id">
+                                <i class="bi bi-download"></i>
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

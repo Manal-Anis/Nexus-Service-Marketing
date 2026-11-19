@@ -1,0 +1,103 @@
+@model List<Bill>
+@{
+    ViewData["Title"] = "My bills";
+    var currentStatus = ViewData["CurrentStatus"] as string;
+    var totalDue = Model.Sum(b => b.AmountDue);
+    var totalPaid = Model.Sum(b => b.AmountPaid);
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-label">Invoices</div>
+            <div class="kpi-value">@Model.Count</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-label">Collected</div>
+            <div class="kpi-value">@totalPaid.ToString("N2") <small>Rs</small></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-label">Outstanding</div>
+            <div class="kpi-value">@totalDue.ToString("N2") <small>Rs</small></div>
+        </div>
+    </div>
+</div>
+
+<div class="glass p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="kpi-label me-2">Filter</span>
+        <a class="btn btn-sm @(string.IsNullOrEmpty(currentStatus) ? "btn-gold" : "btn-ghost")"
+           asp-area="Customer" asp-controller="Bills" asp-action="Index">All</a>
+        @foreach (var status in Enum.GetValues<BillStatus>())
+        {
+            <a class="btn btn-sm @(currentStatus == status.ToString() ? "btn-gold" : "btn-ghost")"
+               asp-area="Customer" asp-controller="Bills" asp-action="Index" asp-route-status="@status">@status.ToDisplayName()</a>
+        }
+    </div>
+</div>
+
+<div class="alert-nexus alert-info mb-4">
+    <i class="bi bi-info-circle-fill"></i>
+    <div class="fs-14">
+        Nexus works on <strong>cash on delivery</strong>. Please pay the amount due at the partner counter or
+        at the retail shop and ask for the counter receipt.
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <rect x="55" y="25" width="90" height="110" rx="10" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M75 55h50M75 75h50M75 95h30" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+            <circle cx="140" cy="40" r="14" stroke="#d4af37" stroke-width="2" opacity=".6" />
+        </svg>
+        <div class="title">No invoice in this view</div>
+        <p class="text">An invoice is issued once the connection is active.</p>
+        <a class="btn btn-gold" asp-area="Customer" asp-controller="Connections" asp-action="Index">My connections</a>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Bill number</th>
+                    <th>Type</th>
+                    <th>Account</th>
+                    <th>Period</th>
+                    <th>Due date</th>
+                    <th>Status</th>
+                    <th class="num">Total</th>
+                    <th class="num">Due</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var bill in Model)
+                {
+                    <tr>
+                        <td class="text-silver">@bill.BillNumber</td>
+                        <td class="fs-14">@bill.BillType.ToDisplayName()</td>
+                        <td class="fs-14">@bill.Connection?.AccountId</td>
+                        <td class="fs-14">@bill.PeriodStart.ToString("dd MMM yyyy") – @bill.PeriodEnd.ToString("dd MMM yyyy")</td>
+                        <td class="fs-14">@bill.DueDate.ToString("dd MMM yyyy")</td>
+                        <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(bill.Status))</td>
+                        <td class="num text-silver">@bill.TotalAmount.ToString("N2")</td>
+                        <td class="num @(bill.AmountDue > 0 ? "text-warning-silver" : "text-muted-silver")">@bill.AmountDue.ToString("N2")</td>
+                        <td class="text-end">
+                            <a class="btn btn-ghost btn-sm" asp-area="Customer" asp-controller="Bills" asp-action="Details" asp-route-billNumber="@bill.BillNumber">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

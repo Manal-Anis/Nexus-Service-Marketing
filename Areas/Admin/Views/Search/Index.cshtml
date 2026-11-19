@@ -1,0 +1,185 @@
+@model AdminSearchViewModel
+@{
+    ViewData["Title"] = "Advanced search";
+    var filters = Model.Filters;
+    var result = Model.Result;
+
+    // The export link carries the same filters as the search form.
+    var exportParts = new List<string>();
+    void AddPart(string key, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            exportParts.Add($"{Uri.EscapeDataString(key)}={Uri.EscapeDataString(value)}");
+        }
+    }
+
+    AddPart("Filters.UniqueId", filters.UniqueId);
+    AddPart("Filters.Name", filters.Name);
+    AddPart("Filters.ConnectionType", filters.ConnectionType);
+    AddPart("Filters.ContactNumber", filters.ContactNumber);
+    AddPart("Filters.DateFrom", filters.DateFrom?.ToString("yyyy-MM-dd"));
+    AddPart("Filters.DateTo", filters.DateTo?.ToString("yyyy-MM-dd"));
+    AddPart("Filters.SortBy", filters.SortBy);
+    AddPart("Filters.PageSize", filters.PageSize.ToString());
+
+    var exportUrl = $"/Admin/Search/Export?{string.Join("&", exportParts)}";
+}
+
+<div class="glass p-4 mb-4">
+    <form method="get" asp-area="Admin" asp-controller="Search" asp-action="Index">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" asp-for="Filters.UniqueId"></label>
+                <input asp-for="Filters.UniqueId" class="form-control" placeholder="D0000000001 or B001000000000001" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" asp-for="Filters.Name"></label>
+                <input asp-for="Filters.Name" class="form-control" placeholder="Name of the customer" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" asp-for="Filters.ConnectionType"></label>
+                <select asp-for="Filters.ConnectionType" class="form-select">
+                    <option value="">Every service</option>
+                    <option value="Dial-Up">Dial-Up</option>
+                    <option value="Broadband">Broadband</option>
+                    <option value="Landline">Landline</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" asp-for="Filters.ContactNumber"></label>
+                <input asp-for="Filters.ContactNumber" class="form-control" placeholder="0300-1234567" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" asp-for="Filters.DateFrom"></label>
+                <input asp-for="Filters.DateFrom" class="form-control" type="date" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" asp-for="Filters.DateTo"></label>
+                <input asp-for="Filters.DateTo" class="form-control" type="date" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" asp-for="Filters.SortBy"></label>
+                <select asp-for="Filters.SortBy" class="form-select">
+                    <option value="date-desc">Newest first</option>
+                    <option value="date-asc">Oldest first</option>
+                    <option value="name">By the name</option>
+                    <option value="amount-desc">The largest amount</option>
+                    <option value="amount-asc">The smallest amount</option>
+                    <option value="id-asc">By the order id</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" asp-for="Filters.PageSize"></label>
+                <select asp-for="Filters.PageSize" class="form-select">
+                    <option value="10">10 rows</option>
+                    <option value="25">25 rows</option>
+                    <option value="50">50 rows</option>
+                    <option value="100">100 rows</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            <button class="btn btn-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+            <a class="btn btn-ghost" asp-area="Admin" asp-controller="Search" asp-action="Index">Reset</a>
+            <a class="btn btn-ghost ms-auto"
+               href="@exportUrl">
+                <i class="bi bi-filetype-csv me-1"></i>Export CSV
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="glass p-3 mb-3">
+    <span class="kpi-label">@result.TotalRows record(s) found</span>
+</div>
+
+@if (result.Rows.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <circle cx="88" cy="72" r="36" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M114 98l30 30" stroke="#c9ccd3" stroke-width="2" opacity=".45" />
+        </svg>
+        <div class="title">Nothing found</div>
+        <p class="text">No record of the network matches the values of the search.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Order id</th>
+                    <th>Account id</th>
+                    <th>Customer</th>
+                    <th>Service</th>
+                    <th>Plan</th>
+                    <th>Phone</th>
+                    <th>City</th>
+                    <th>Order</th>
+                    <th>Connection</th>
+                    <th class="num">Amount</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in result.Rows)
+                {
+                    <tr>
+                        <td><span class="order-id-chip">@row.OrderId</span></td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(row.AccountId))
+                            {
+                                <span class="account-id-chip">@row.AccountId</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted-silver">-</span>
+                            }
+                        </td>
+                        <td class="fs-14">@row.CustomerName</td>
+                        <td class="fs-14 text-muted-silver">@row.ServiceType</td>
+                        <td class="fs-14 text-muted-silver">@row.PlanName</td>
+                        <td class="fs-14 text-muted-silver">@(row.ContactNumber ?? "-")</td>
+                        <td class="fs-14 text-muted-silver">@(row.CityName ?? "-")</td>
+                        <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(row.OrderStatus))</td>
+                        <td>
+                            @if (row.ConnectionStatus.HasValue)
+                            {
+                                @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(row.ConnectionStatus.Value))
+                            }
+                            else
+                            {
+                                <span class="text-muted-silver">-</span>
+                            }
+                        </td>
+                        <td class="num text-silver">@row.TotalAmount.ToString("N2")</td>
+                        <td class="fs-14">@row.Date.ToString("dd MMM yyyy")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @await Html.PartialAsync("_Pager", new PagerViewModel
+    {
+        Page = result.Page,
+        TotalPages = result.TotalPages,
+        TotalRows = result.TotalRows,
+        PageRouteKey = "Filters.Page",
+        RouteValues = new Dictionary<string, string?>
+        {
+            ["Filters.UniqueId"] = filters.UniqueId,
+            ["Filters.Name"] = filters.Name,
+            ["Filters.ConnectionType"] = filters.ConnectionType,
+            ["Filters.ContactNumber"] = filters.ContactNumber,
+            ["Filters.DateFrom"] = filters.DateFrom?.ToString("yyyy-MM-dd"),
+            ["Filters.DateTo"] = filters.DateTo?.ToString("yyyy-MM-dd"),
+            ["Filters.SortBy"] = filters.SortBy,
+            ["Filters.PageSize"] = filters.PageSize.ToString()
+        }
+    })
+}

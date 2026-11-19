@@ -1,0 +1,115 @@
+@model TrackOrderViewModel
+@{
+    ViewData["Title"] = "Track your order";
+}
+
+<section class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="text-center mb-4" data-reveal>
+                <span class="eyebrow">Order status</span>
+                <h1 class="section-title mt-2">Track your order</h1>
+                <p class="section-lead mx-auto mt-2">
+                    Enter the order id that was issued when you placed the order. It starts with the service letter
+                    and is followed by ten digits, for example <span class="order-id-chip">D0000000001</span>.
+                </p>
+            </div>
+
+            <form method="post" asp-controller="Home" asp-action="TrackOrder" class="glass p-4 mb-4" data-reveal>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-9">
+                        <label class="form-label" asp-for="OrderId">Order ID</label>
+                        <input asp-for="OrderId" class="form-control" placeholder="D0000000001" autocomplete="off" />
+                        <span asp-validation-for="OrderId" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-gold w-100"><i class="bi bi-search me-1"></i>Track</button>
+                    </div>
+                </div>
+            </form>
+
+            @if (Model.Searched && Model.Order is null)
+            {
+                <div class="alert-nexus alert-warning" data-reveal>
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div>
+                        <strong>No order found.</strong>
+                        <div class="fs-14">Check the order id and try again. It is printed on your activation invoice.</div>
+                    </div>
+                </div>
+            }
+            else if (Model.Order is not null)
+            {
+                <div class="glass p-4" data-reveal>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                        <div>
+                            <div class="kpi-label">Order</div>
+                            <span class="order-id-chip fs-6">@Model.Order.OrderId</span>
+                        </div>
+                        <div>
+                            <div class="kpi-label">Service</div>
+                            <div class="text-silver">@Model.Order.Plan?.Name</div>
+                        </div>
+                        <div>
+                            <div class="kpi-label">Placed on</div>
+                            <div class="text-silver">@Model.Order.PlacedAt.ToString("dd MMM yyyy")</div>
+                        </div>
+                        <div>
+                            <div class="kpi-label">Total</div>
+                            <div class="text-gold fw-600">Rs @Model.Order.TotalAmount.ToString("N2")</div>
+                        </div>
+                        <div>
+                            <div class="kpi-label">Status</div>
+                            @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(Model.Order.Status))
+                        </div>
+                    </div>
+
+                    <hr class="divider-gold my-4" />
+
+                    <h2 class="h6 mb-3">Progress</h2>
+                    <ul class="timeline">
+                        @foreach (var history in Model.Order.StatusHistory.OrderBy(h => h.ChangedAt))
+                        {
+                            <li class="timeline-item">
+                                <span class="timeline-dot @(history.ToStatus == OrderStatus.NotFeasible || history.ToStatus == OrderStatus.Cancelled ? "fail" : "done")"></span>
+                                <div class="timeline-title">@history.ToStatus.ToDisplayName()</div>
+                                <div class="timeline-meta">@history.ChangedAt.ToString("dd MMM yyyy, hh:mm tt") @(string.IsNullOrWhiteSpace(history.ChangedByName) ? "" : "- " + history.ChangedByName)</div>
+                                @if (!string.IsNullOrWhiteSpace(history.Remark))
+                                {
+                                    <div class="text-muted-silver fs-14">@history.Remark</div>
+                                }
+                            </li>
+                        }
+                    </ul>
+
+                    @if (Model.Order.FeasibilityChecks.Count > 0)
+                    {
+                        <h2 class="h6 mb-3 mt-4">Feasibility checks</h2>
+                        <div class="table-wrap">
+                            <table class="table-glass">
+                                <thead>
+                                    <tr>
+                                        <th>Check</th>
+                                        <th>Result</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var check in Model.Order.FeasibilityChecks)
+                                    {
+                                        <tr>
+                                            <td>@check.CheckType.ToDisplayName()</td>
+                                            <td>@await Component.InvokeAsync("StatusBadge", BadgeMapper.For(check.Result))</td>
+                                            <td class="text-muted-silver fs-14">@check.Remarks</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</section>

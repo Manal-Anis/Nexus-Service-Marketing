@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "Access denied";
+}
+
+<section class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="glass p-4 p-lg-5 text-center" data-reveal>
+                <span class="brand-mark mx-auto mb-3" style="width:58px;height:58px;font-size:1.5rem;"><i class="bi bi-shield-exclamation"></i></span>
+                <h1 class="h4 mb-2">You are not allowed to open this page</h1>
+                @if (TempData["Error"] is string reason)
+                {
+                    <div class="alert-nexus alert-danger my-3 text-start"><i class="bi bi-x-circle-fill"></i><div>@reason</div></div>
+                }
+                <p class="text-muted-silver">
+                    The page belongs to a different area of the system. Sign in with an account that has the right
+                    role, or go back to the page that you came from.
+                </p>
+                <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+                    <a class="btn btn-gold" asp-controller="Home" asp-action="Index"><i class="bi bi-house-door me-2"></i>Home page</a>
+                    <a class="btn btn-outline-gold" asp-controller="Account" asp-action="Login">Sign in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

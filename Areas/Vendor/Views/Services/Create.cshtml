@@ -1,0 +1,137 @@
+@model VendorPlanFormViewModel
+@{
+    ViewData["Title"] = "Submit a plan";
+}
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" asp-area="Vendor" asp-controller="Services" asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The plan</h2>
+
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label" asp-for="Name">Plan name</label>
+                        <input asp-for="Name" class="form-control" placeholder="Unlimited 256 Kbps - Monthly" />
+                        <span asp-validation-for="Name" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="CategoryId">Service category</label>
+                        <select asp-for="CategoryId" class="form-select">
+                            <option value="">Choose a category</option>
+                            @foreach (var category in Model.Categories)
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="CategoryId" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Kind">Plan type</label>
+                        <select asp-for="Kind" class="form-select">
+                            @foreach (var kind in Enum.GetValues<PlanKind>())
+                            {
+                                <option value="@kind">@kind.ToDisplayName()</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="BillingPeriod">Billing period</label>
+                        <select asp-for="BillingPeriod" class="form-select">
+                            @foreach (var period in Enum.GetValues<BillingPeriod>())
+                            {
+                                <option value="@period">@period.ToDisplayName()</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Price">Price</label>
+                        <input asp-for="Price" class="form-control" type="number" min="0" step="0.01" />
+                        <span asp-validation-for="Price" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="SpeedKbps">Speed in Kbps</label>
+                        <input asp-for="SpeedKbps" class="form-control" type="number" min="0" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Hours">Hours included</label>
+                        <input asp-for="Hours" class="form-control" type="number" min="0" placeholder="For the hourly packs" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="ValidityDays">Validity in days</label>
+                        <input asp-for="ValidityDays" class="form-control" type="number" min="0" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The call rates (landline plans)</h2>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="LocalRate">Local rate per minute</label>
+                        <input asp-for="LocalRate" class="form-control" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="StdRate">STD rate per minute</label>
+                        <input asp-for="StdRate" class="form-control" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="MobileMsgRate">Mobile rate per minute</label>
+                        <input asp-for="MobileMsgRate" class="form-control" type="number" min="0" step="0.01" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The description</h2>
+
+                <label class="form-label" asp-for="Description">Description</label>
+                <textarea asp-for="Description" class="form-control mb-3" rows="3"
+                          placeholder="What the customer gets for the price"></textarea>
+
+                <label class="form-label" asp-for="Features">Features</label>
+                <textarea asp-for="Features" class="form-control" rows="2"
+                          placeholder="One feature per line"></textarea>
+            </div>
+
+            <button class="btn btn-gold" type="submit">
+                <i class="bi bi-send me-1"></i>Submit for the approval
+            </button>
+            <a class="btn btn-ghost" asp-area="Vendor" asp-controller="Services" asp-action="Index">Cancel</a>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass p-4">
+            <h2 class="h5 mb-3">What happens next</h2>
+            <ul class="timeline">
+                <li class="timeline-item">
+                    <span class="timeline-dot done"></span>
+                    <div class="timeline-title">Plan submitted</div>
+                    <div class="timeline-meta">It waits for the review of the administrator</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot"></span>
+                    <div class="timeline-title">Admin approval</div>
+                    <div class="timeline-meta">The administrator approves or rejects the plan</div>
+                </li>
+                <li class="timeline-item">
+                    <span class="timeline-dot"></span>
+                    <div class="timeline-title">Published</div>
+                    <div class="timeline-meta">An approved plan appears in the public catalogue</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

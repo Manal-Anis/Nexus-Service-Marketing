@@ -1,0 +1,87 @@
+@model List<RetailShop>
+@{
+    ViewData["Title"] = "Retail shops";
+    var vendors = ViewData["Vendors"] as List<Vendor> ?? new List<Vendor>();
+    var currentVendorId = ViewData["CurrentVendorId"] as int?;
+    var currentSearch = ViewData["CurrentSearch"] as string;
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4"><i class="bi bi-check-circle-fill"></i><div>@success</div></div>
+}
+
+<div class="glass p-3 mb-4">
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <select name="vendorId" class="form-select" style="max-width:260px">
+            <option value="">Every partner</option>
+            @foreach (var vendor in vendors)
+            {
+                <option value="@vendor.Id" selected="@(currentVendorId == vendor.Id)">@vendor.BusinessName</option>
+            }
+        </select>
+        <input class="form-control" style="max-width:280px" type="search" name="search" value="@currentSearch"
+               placeholder="Shop or contact person" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+        <a class="btn btn-gold ms-auto" asp-area="Admin" asp-controller="RetailShops" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i>Register a shop
+        </a>
+    </form>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <path d="M45 70h110v60H45z" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M35 70l12-24h106l12 24" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No retail shop in this view</div>
+        <p class="text">No counter matches the current filter.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Shop</th>
+                    <th>Partner</th>
+                    <th>City</th>
+                    <th>Contact person</th>
+                    <th>Phone</th>
+                    <th>Staff</th>
+                    <th>State</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var shop in Model)
+                {
+                    <tr>
+                        <td class="text-silver fw-600">@shop.Name</td>
+                        <td class="fs-14">@(shop.Vendor?.BusinessName ?? "-")</td>
+                        <td class="fs-14 text-muted-silver">@(shop.City?.Name ?? "-")</td>
+                        <td class="fs-14">@(shop.ContactPerson ?? "-")</td>
+                        <td class="fs-14 text-muted-silver">@(shop.Phone ?? "-")</td>
+                        <td class="num">@shop.Employees.Count</td>
+                        <td>
+                            @if (shop.IsActive)
+                            {
+                                <span class="badge-status badge-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge-status badge-muted">Inactive</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-ghost btn-sm" asp-area="Admin" asp-controller="RetailShops" asp-action="Edit" asp-route-id="@shop.Id">Edit</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

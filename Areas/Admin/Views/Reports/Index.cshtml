@@ -1,0 +1,255 @@
+@model AdminReportsViewModel
+@{
+    ViewData["Title"] = "Reports";
+    var from = ViewData["From"] as string ?? Model.From.ToString("yyyy-MM-dd");
+    var to = ViewData["To"] as string ?? Model.To.ToString("yyyy-MM-dd");
+}
+
+<!-- ------------------------------------------------------------------ period filter -->
+<div class="glass p-3 mb-4">
+    <form method="get" asp-area="Admin" asp-controller="Reports" asp-action="Index" class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="kpi-label me-1">Period</span>
+        <input class="form-control" style="max-width:170px" type="date" name="from" value="@from" />
+        <span class="text-muted-silver">to</span>
+        <input class="form-control" style="max-width:170px" type="date" name="to" value="@to" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-graph-up me-1"></i>Build the report</button>
+        <a class="btn btn-ghost ms-auto" asp-area="Admin" asp-controller="Reports" asp-action="Index"
+           asp-route-from="@from" asp-route-to="@to"><i class="bi bi-arrow-counterclockwise me-1"></i>Last six months</a>
+    </form>
+</div>
+
+<!-- ------------------------------------------------------------------ KPI -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-receipt"></i></span>
+            <div class="kpi-label">Orders</div>
+            <div class="kpi-value">@Model.TotalOrders</div>
+            <div class="kpi-delta">placed inside the period</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-file-earmark-text"></i></span>
+            <div class="kpi-label">Billed</div>
+            <div class="kpi-value">@Model.TotalBilled.ToString("N0")</div>
+            <div class="kpi-delta">rupees invoiced</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-cash-stack"></i></span>
+            <div class="kpi-label">Collected</div>
+            <div class="kpi-value">@Model.TotalCollected.ToString("N0")</div>
+            <div class="kpi-delta">rupees received in cash</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+            <div class="kpi-label">Outstanding</div>
+            <div class="kpi-value">@Model.TotalOutstanding.ToString("N0")</div>
+            <div class="kpi-delta">rupees still to be collected</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-percent"></i></span>
+            <div class="kpi-label">Tax collected</div>
+            <div class="kpi-value">@Model.TaxCollected.ToString("N0")</div>
+            <div class="kpi-delta">government tax on the bills</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-tags"></i></span>
+            <div class="kpi-label">Discount given</div>
+            <div class="kpi-value">@Model.DiscountGiven.ToString("N0")</div>
+            <div class="kpi-delta">rupees waived on bulk plans</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-router"></i></span>
+            <div class="kpi-label">Live connections</div>
+            <div class="kpi-value">@Model.ActiveConnections</div>
+            <div class="kpi-delta">active lines on the network</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-people"></i></span>
+            <div class="kpi-label">Customers</div>
+            <div class="kpi-value">@Model.Customers</div>
+            <div class="kpi-delta">registered on the portal</div>
+        </div>
+    </div>
+</div>
+
+<!-- ------------------------------------------------------------------ monthly trend -->
+<div class="glass p-4 mb-4">
+    <h2 class="h6 mb-3">Billed and collected over the last six months</h2>
+    <div style="height:280px">
+        <canvas id="chartMonthlyTrend"></canvas>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- ------------------------------------------------------------- per partner -->
+    <div class="col-xl-6">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">Turnover per service partner</h2>
+            @if (Model.PerPartner.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No order was placed inside the period.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>Partner</th>
+                                <th class="num">Orders</th>
+                                <th class="num">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.PerPartner)
+                            {
+                                <tr>
+                                    <td class="fs-14">@row.Partner</td>
+                                    <td class="num fs-14 text-silver">@row.Orders</td>
+                                    <td class="num text-gold">@row.Amount.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------- per city -->
+    <div class="col-xl-6">
+        <div class="glass p-4 h-100">
+            <h2 class="h6 mb-3">Turnover per city</h2>
+            @if (Model.PerCity.Count == 0)
+            {
+                <p class="text-muted-silver fs-14 mb-0">No order was placed inside the period.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-glass">
+                        <thead>
+                            <tr>
+                                <th>City</th>
+                                <th class="num">Orders</th>
+                                <th class="num">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.PerCity)
+                            {
+                                <tr>
+                                    <td class="fs-14">@row.City</td>
+                                    <td class="num fs-14 text-silver">@row.Orders</td>
+                                    <td class="num text-gold">@row.Amount.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- ------------------------------------------------------------------ top plans -->
+<div class="glass p-4 mt-4">
+    <h2 class="h6 mb-3">The most ordered plans</h2>
+    @if (Model.TopPlans.Count == 0)
+    {
+        <p class="text-muted-silver fs-14 mb-0">No plan was ordered inside the period.</p>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table-glass">
+                <thead>
+                    <tr>
+                        <th>Plan</th>
+                        <th class="num">Connections</th>
+                        <th class="num">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.TopPlans)
+                    {
+                        <tr>
+                            <td class="fs-14">@row.Plan</td>
+                            <td class="num fs-14 text-silver">@row.Count</td>
+                            <td class="num text-gold">@row.Amount.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var canvas = document.getElementById('chartMonthlyTrend');
+            if (!canvas) return;
+
+            var colors = window.nexusChartColors;
+            var months = @Html.Raw(Json.Serialize(Model.MonthlyTrend.Select(t => t.Month).ToList()));
+            var billed = @Html.Raw(Json.Serialize(Model.MonthlyTrend.Select(t => t.Billed).ToList()));
+            var collected = @Html.Raw(Json.Serialize(Model.MonthlyTrend.Select(t => t.Collected).ToList()));
+
+            window.nexusChart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Billed (Rs)',
+                            data: billed,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            backgroundColor: function (context) {
+                                var chart = context.chart;
+                                if (!chart.chartArea) return 'rgba(212,175,55,0.6)';
+                                return window.nexusChartGradient(chart.ctx, chart.chartArea, 'rgba(212,175,55,0.95)', 'rgba(212,175,55,0.25)');
+                            }
+                        },
+                        {
+                            label: 'Collected (Rs)',
+                            data: collected,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            backgroundColor: function (context) {
+                                var chart = context.chart;
+                                if (!chart.chartArea) return 'rgba(201,204,211,0.6)';
+                                return window.nexusChartGradient(chart.ctx, chart.chartArea, 'rgba(201,204,211,0.95)', 'rgba(201,204,211,0.25)');
+                            }
+                        }
+                    ]
+                },
+                options: {
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { ticks: { color: colors.silverMuted, callback: function (v) { return v.toLocaleString(); } } }
+                    }
+                }
+            });
+        });
+    </script>
+}

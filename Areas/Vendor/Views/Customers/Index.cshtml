@@ -1,0 +1,89 @@
+@model VendorCustomersViewModel
+@{
+    ViewData["Title"] = "Customers";
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-people"></i></span>
+            <div class="kpi-label">Customers</div>
+            <div class="kpi-value">@Model.TotalCount</div>
+            <div class="kpi-delta">served by your desk</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-router"></i></span>
+            <div class="kpi-label">Active connections</div>
+            <div class="kpi-value">@Model.ActiveConnections</div>
+            <div class="kpi-delta">of your customers</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+            <div class="kpi-label">Outstanding</div>
+            <div class="kpi-value">@Model.OutstandingAmount.ToString("N0")</div>
+            <div class="kpi-delta">Rupees still to be collected</div>
+        </div>
+    </div>
+</div>
+
+<div class="glass p-3 mb-4">
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <input class="form-control" style="max-width:340px" type="search" name="search" value="@Model.Search"
+               placeholder="Name, phone number, email or address" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+        @if (!string.IsNullOrWhiteSpace(Model.Search))
+        {
+            <a class="btn btn-ghost" asp-area="Vendor" asp-controller="Customers" asp-action="Index">Clear</a>
+        }
+    </form>
+</div>
+
+@if (Model.Customers.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <circle cx="80" cy="62" r="20" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M45 130c0-20 16-34 35-34s35 14 35 34" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No customer yet</div>
+        <p class="text">The customers appear here as soon as they place an order with your desk.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>City</th>
+                    <th>Address</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var customer in Model.Customers)
+                {
+                    <tr>
+                        <td class="text-silver fw-600">@customer.FullName</td>
+                        <td class="fs-14">@customer.Phone</td>
+                        <td class="fs-14 text-muted-silver">@customer.Email</td>
+                        <td class="fs-14 text-muted-silver">@customer.City?.Name</td>
+                        <td class="fs-14 text-muted-silver">@customer.Address</td>
+                        <td class="text-end">
+                            <a class="btn btn-ghost btn-sm" asp-area="Vendor" asp-controller="Customers" asp-action="Details" asp-route-id="@customer.Id">
+                                Open
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

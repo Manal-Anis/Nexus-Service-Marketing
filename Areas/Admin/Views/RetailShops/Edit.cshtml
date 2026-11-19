@@ -1,0 +1,65 @@
+@model RetailShopFormViewModel
+@{
+    ViewData["Title"] = $"Edit {Model.Name}";
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post" asp-area="Admin" asp-controller="RetailShops" asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="glass p-4 mb-4">
+                <h2 class="h5 mb-3">The counter</h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Name"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="VendorId"></label>
+                        <select asp-for="VendorId" asp-items="@(Model.Vendors.Select(v => new SelectListItem { Text = v.BusinessName, Value = v.Id.ToString() }))" class="form-select"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="ContactPerson"></label>
+                        <input asp-for="ContactPerson" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Phone"></label>
+                        <input asp-for="Phone" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="CityId"></label>
+                        <select asp-for="CityId" asp-items="@(Model.Cities.Select(c => new SelectListItem { Text = $"{c.Name} ({c.Code3})", Value = c.Id.ToString() }))" class="form-select">
+                            <option value="">Select a city</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="Address"></label>
+                        <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label" asp-for="IsActive">The counter is open</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-gold" type="submit"><i class="bi bi-check2-circle me-1"></i>Save the changes</button>
+            <a class="btn btn-ghost" asp-area="Admin" asp-controller="RetailShops" asp-action="Index">Cancel</a>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass p-4">
+            <h2 class="h6 mb-3">Note</h2>
+            <p class="text-muted-silver fs-14 mb-0">
+                Closing a counter does not delete the orders that were taken there, the history of the
+                network stays complete.
+            </p>
+        </div>
+    </div>
+</div>

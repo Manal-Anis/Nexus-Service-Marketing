@@ -1,0 +1,127 @@
+@model List<Order>
+@{
+    ViewData["Title"] = "Feasibility queue";
+    var selectedId = ViewData["SelectedOrderId"] as string;
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4">
+        <i class="bi bi-check-circle-fill"></i>
+        <div>@success</div>
+    </div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4">
+        <i class="bi bi-x-circle-fill"></i>
+        <div>@error</div>
+    </div>
+}
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <circle cx="100" cy="80" r="42" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M78 80l16 16 30-32" stroke="#c9ccd3" stroke-width="2" opacity=".55" />
+        </svg>
+        <div class="title">The queue is empty</div>
+        <p class="text">Every order of your service desk has been surveyed already.</p>
+        <a class="btn btn-gold" asp-area="Vendor" asp-controller="Orders" asp-action="Index">Open the orders</a>
+    </div>
+}
+else
+{
+    <div class="d-grid gap-4">
+        @foreach (var order in Model)
+        {
+            var isSelected = selectedId == order.OrderId;
+
+            <div class="glass p-4 @(isSelected ? "gold-border" : "")">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="order-id-chip">@order.OrderId</span>
+                            @await Component.InvokeAsync("StatusBadge", BadgeMapper.For(order.Status))
+                        </div>
+                        <div class="text-silver fw-600">@order.Plan?.Name</div>
+                        <small class="text-muted-silver">
+                            @order.Customer?.FullName - @order.City?.Name - @order.InstallationAddress
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <div class="kpi-label">Required checks</div>
+                        <div class="text-silver">@order.FeasibilityChecks.Count</div>
+                        @if (order.RequiresLandline)
+                        {
+                            <small class="text-gold">Dial-Up without an existing landline - two checks</small>
+                        }
+                    </div>
+                </div>
+
+                @if (order.FeasibilityChecks.Count == 0)
+                {
+                    <p class="text-muted-silver fs-14 mb-0">No check has been opened for this order yet.</p>
+                }
+                else
+                {
+                    <div class="d-grid gap-3">
+                        @foreach (var check in order.FeasibilityChecks)
+                        {
+                            <form method="post" asp-area="Vendor" asp-controller="Feasibility" asp-action="Record" class="row g-3 align-items-end">
+                                <input type="hidden" name="OrderId" value="@order.Id" />
+                                <input type="hidden" name="CheckId" value="@check.Id" />
+
+                                <div class="col-lg-3">
+                                    <label class="form-label">Check</label>
+                                    <div class="text-silver fw-600">
+                                        <i class="bi bi-clipboard2-check me-1"></i>@check.CheckType.ToDisplayName()
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(check.Remarks))
+                                    {
+                                        <small class="text-muted-silver">@check.Remarks</small>
+                                    }
+                                </div>
+
+                                <div class="col-lg-2">
+                                    <label class="form-label" for="res-@check.Id">Result</label>
+                                    <select class="form-select" id="res-@check.Id" name="Result">
+                                        @foreach (var option in Enum.GetValues<FeasibilityResult>())
+                                        {
+                                            <option value="@option" selected="@(option == check.Result)">@option.ToDisplayName()</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="col-lg-3">
+                                    <label class="form-label" for="dist-@check.Id">Distance parameters</label>
+                                    <input class="form-control" id="dist-@check.Id" name="DistanceParameters" value="@check.DistanceParameters"
+                                           placeholder="Cable length, exchange distance" />
+                                </div>
+
+                                <div class="col-lg-2">
+                                    <label class="form-label" for="srv-@check.Id">Server availability</label>
+                                    <input class="form-control" id="srv-@check.Id" name="ServerAvailability" value="@check.ServerAvailability"
+                                           placeholder="Port and server state" />
+                                </div>
+
+                                <div class="col-lg-2">
+                                    <button class="btn btn-gold w-100" type="submit">
+                                        <i class="bi bi-save me-1"></i>Save
+                                    </button>
+                                </div>
+                            </form>
+                        }
+                    </div>
+                }
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <a class="btn btn-ghost btn-sm" asp-area="Vendor" asp-controller="Orders" asp-action="Details" asp-route-id="@order.OrderId">
+                        <i class="bi bi-eye me-1"></i>Open the order
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+}

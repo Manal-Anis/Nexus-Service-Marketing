@@ -1,0 +1,104 @@
+@model ContactViewModel
+@{
+    ViewData["Title"] = "Contact us";
+}
+
+<section class="container py-5">
+    <div class="text-center mb-5" data-reveal>
+        <span class="eyebrow">Support desk</span>
+        <h1 class="section-title mt-2">Talk to Nexus</h1>
+        <p class="section-lead mx-auto mt-2">Questions about a plan, an order or an invoice? Write to us and we reply within one working day.</p>
+    </div>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert-nexus alert-success mb-4" data-reveal>
+            <i class="bi bi-check-circle-fill"></i>
+            <div>@success</div>
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-5" data-reveal>
+            <div class="glass p-4 h-100">
+                <h2 class="h5 mb-4">Reach us directly</h2>
+
+                <div class="d-flex gap-3 mb-4">
+                    <span class="brand-mark" style="width:44px;height:44px;font-size:1.05rem;border-radius:13px;"><i class="bi bi-geo-alt-fill"></i></span>
+                    <div>
+                        <div class="text-silver fw-600">Head office</div>
+                        <div class="text-muted-silver fs-14">Nexus Communication System, I.I. Chundrigar Road, Karachi</div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 mb-4">
+                    <span class="brand-mark" style="width:44px;height:44px;font-size:1.05rem;border-radius:13px;"><i class="bi bi-telephone-fill"></i></span>
+                    <div>
+                        <div class="text-silver fw-600">Customer care</div>
+                        <div class="text-muted-silver fs-14">111-123456 &middot; 9:00 to 21:00</div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 mb-4">
+                    <span class="brand-mark" style="width:44px;height:44px;font-size:1.05rem;border-radius:13px;"><i class="bi bi-envelope-fill"></i></span>
+                    <div>
+                        <div class="text-silver fw-600">Email</div>
+                        <div class="text-muted-silver fs-14">support@nexus.com</div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <span class="brand-mark" style="width:44px;height:44px;font-size:1.05rem;border-radius:13px;"><i class="bi bi-shop"></i></span>
+                    <div>
+                        <div class="text-silver fw-600">Retail counters</div>
+                        <div class="text-muted-silver fs-14">Every Nexus partner shop takes payments and bookings.</div>
+                    </div>
+                </div>
+
+                <hr class="divider-gold my-4" />
+
+                <div class="alert-nexus alert-info">
+                    <i class="bi bi-cash-coin"></i>
+                    <div class="fs-14">All invoices are settled in cash at the counter. We never ask for card details and there is no online payment gateway.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7" data-reveal="120">
+            <form method="post" asp-controller="Home" asp-action="Contact" class="glass p-4">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Name">Full name</label>
+                        <input asp-for="Name" class="form-control" placeholder="Your name" />
+                        <span asp-validation-for="Name" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Email">Email</label>
+                        <input asp-for="Email" class="form-control" placeholder="you@example.com" />
+                        <span asp-validation-for="Email" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Phone">Phone</label>
+                        <input asp-for="Phone" class="form-control" placeholder="+92 300 1234567" />
+                        <span asp-validation-for="Phone" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Subject">Subject</label>
+                        <input asp-for="Subject" class="form-control" placeholder="Broadband availability" />
+                        <span asp-validation-for="Subject" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="Message">Message</label>
+                        <textarea asp-for="Message" class="form-control" rows="5" placeholder="How can we help?"></textarea>
+                        <span asp-validation-for="Message" class="text-danger fs-14"></span>
+                    </div>
+                    <div class="col-12 d-grid">
+                        <button type="submit" class="btn btn-gold btn-lg">Send the message</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,108 @@
+@model List<Payment>
+@{
+    ViewData["Title"] = "Payments";
+    var currentSearch = ViewData["CurrentSearch"] as string;
+    var currentFrom = ViewData["CurrentFrom"] as string;
+    var currentTo = ViewData["CurrentTo"] as string;
+    var page = ViewData["Page"] as int? ?? 1;
+    var totalPages = ViewData["TotalPages"] as int? ?? 1;
+    var totalRows = ViewData["TotalRows"] as int? ?? 0;
+    var totalCollected = ViewData["TotalCollected"] as decimal? ?? 0m;
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4"><i class="bi bi-check-circle-fill"></i><div>@success</div></div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-receipt-cutoff"></i></span>
+            <div class="kpi-label">Receipts</div>
+            <div class="kpi-value">@totalRows</div>
+            <div class="kpi-delta">receipt(s) in this view</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-cash-stack"></i></span>
+            <div class="kpi-label">Cash received</div>
+            <div class="kpi-value">@totalCollected.ToString("N0")</div>
+            <div class="kpi-delta">Rupees collected in this view</div>
+        </div>
+    </div>
+</div>
+
+<div class="glass p-3 mb-4">
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <input class="form-control" style="max-width:280px" type="search" name="search" value="@currentSearch"
+               placeholder="Receipt number, bill number or account id" />
+        <input class="form-control" style="max-width:170px" type="date" name="from" value="@currentFrom" />
+        <input class="form-control" style="max-width:170px" type="date" name="to" value="@currentTo" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+        <a class="btn btn-ghost ms-auto" asp-area="Admin" asp-controller="Payments" asp-action="Export"
+           asp-route-search="@currentSearch" asp-route-from="@currentFrom" asp-route-to="@currentTo">
+            <i class="bi bi-filetype-csv me-1"></i>Export CSV
+        </a>
+    </form>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <rect x="40" y="55" width="120" height="70" rx="8" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <circle cx="100" cy="90" r="18" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No receipt in this view</div>
+        <p class="text">No cash receipt matches the current filter.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Receipt</th>
+                    <th>Bill</th>
+                    <th>Account id</th>
+                    <th>Customer</th>
+                    <th>Partner</th>
+                    <th>Paid on</th>
+                    <th>Received by</th>
+                    <th class="num">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var payment in Model)
+                {
+                    <tr>
+                        <td><span class="order-id-chip">@payment.ReceiptNumber</span></td>
+                        <td class="fs-14 text-muted-silver">@(payment.Bill?.BillNumber ?? "-")</td>
+                        <td><span class="account-id-chip">@(payment.Bill?.Connection?.AccountId ?? "-")</span></td>
+                        <td class="fs-14">@(payment.Bill?.Connection?.Customer?.FullName ?? "-")</td>
+                        <td class="fs-14 text-muted-silver">@(payment.Bill?.Connection?.Vendor?.BusinessName ?? "-")</td>
+                        <td class="fs-14">@payment.PaidOn.ToString("dd MMM yyyy")</td>
+                        <td class="fs-14 text-muted-silver">@(payment.ReceivedByName ?? "-")</td>
+                        <td class="num text-gold">@payment.Amount.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @await Html.PartialAsync("_Pager", new PagerViewModel
+    {
+        Page = page,
+        TotalPages = totalPages,
+        TotalRows = totalRows,
+        RouteValues = new Dictionary<string, string?>
+        {
+            ["search"] = currentSearch,
+            ["from"] = currentFrom,
+            ["to"] = currentTo
+        }
+    })
+}

@@ -1,0 +1,15 @@
+@* Switch between the two kinds of account that a visitor can open: customer or partner (vendor). *@
+@model string
+@{
+    var active = Model ?? "customer";
+}
+<div class="auth-switch d-flex gap-2 p-1 mb-4 mx-auto" role="tablist" aria-label="Account type">
+    <a class="btn btn-sm flex-fill @(active == "customer" ? "btn-gold" : "btn-ghost")"
+       asp-area="" asp-controller="Account" asp-action="Register">
+        <i class="bi bi-person me-1"></i>I am a customer
+    </a>
+    <a class="btn btn-sm flex-fill @(active == "partner" ? "btn-gold" : "btn-ghost")"
+       asp-area="" asp-controller="Account" asp-action="RegisterVendor">
+        <i class="bi bi-shop me-1"></i>I am a partner (vendor)
+    </a>
+</div>

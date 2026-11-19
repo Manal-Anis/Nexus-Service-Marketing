@@ -1,0 +1,144 @@
+@model List<Product>
+@{
+    ViewData["Title"] = "Equipment";
+    var currentSearch = ViewData["CurrentSearch"] as string;
+    var currentStock = ViewData["CurrentStock"] as string;
+    var lowStock = ViewData["LowStockCount"] as int? ?? 0;
+    var outOfStock = ViewData["OutOfStockCount"] as int? ?? 0;
+}
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert-nexus alert-success mb-4"><i class="bi bi-check-circle-fill"></i><div>@success</div></div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert-nexus alert-danger mb-4"><i class="bi bi-x-circle-fill"></i><div>@error</div></div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-box-seam"></i></span>
+            <div class="kpi-label">Devices</div>
+            <div class="kpi-value">@Model.Count</div>
+            <div class="kpi-delta">in the master data</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></span>
+            <div class="kpi-label">Below the reorder level</div>
+            <div class="kpi-value">@lowStock</div>
+            <div class="kpi-delta">device(s) to reorder</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-x-octagon"></i></span>
+            <div class="kpi-label">Out of stock</div>
+            <div class="kpi-value">@outOfStock</div>
+            <div class="kpi-delta">device(s) not available</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="kpi-card glass">
+            <span class="kpi-icon"><i class="bi bi-cart-plus"></i></span>
+            <div class="kpi-label">Reorder suggestion</div>
+            <div class="kpi-value">
+                <a class="btn btn-outline-gold btn-sm" asp-area="Admin" asp-controller="PurchaseOrders" asp-action="Reorder">Open</a>
+            </div>
+            <div class="kpi-delta">the devices that need a new purchase order</div>
+        </div>
+    </div>
+</div>
+
+<div class="glass p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <span class="kpi-label me-2">Stock</span>
+        <a class="btn btn-sm @(string.IsNullOrEmpty(currentStock) ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Products" asp-action="Index">All</a>
+        <a class="btn btn-sm @(currentStock == "low" ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Products" asp-action="Index" asp-route-stock="low">Below the reorder level</a>
+        <a class="btn btn-sm @(currentStock == "out" ? "btn-gold" : "btn-ghost")"
+           asp-area="Admin" asp-controller="Products" asp-action="Index" asp-route-stock="out">Out of stock</a>
+    </div>
+
+    <form method="get" class="d-flex flex-wrap gap-2">
+        <input type="hidden" name="stock" value="@currentStock" />
+        <input class="form-control" style="max-width:320px" type="search" name="search" value="@currentSearch"
+               placeholder="Name or type of the device" />
+        <button class="btn btn-outline-gold" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+        <a class="btn btn-gold ms-auto" asp-area="Admin" asp-controller="Products" asp-action="Create">
+            <i class="bi bi-plus-lg me-1"></i>Register a device
+        </a>
+    </form>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="glass empty-state">
+        <svg viewBox="0 0 200 160" fill="none" aria-hidden="true">
+            <path d="M50 55l50-25 50 25v50l-50 25-50-25z" stroke="#d4af37" stroke-width="2" opacity=".5" />
+            <path d="M50 55l50 25 50-25M100 80v50" stroke="#c9ccd3" stroke-width="2" opacity=".4" />
+        </svg>
+        <div class="title">No device in this view</div>
+        <p class="text">No device of the master data matches the current filter.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-glass">
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>Type</th>
+                    <th>Supplier</th>
+                    <th class="num">Price</th>
+                    <th class="num">Replacement</th>
+                    <th class="num">Stock</th>
+                    <th class="num">Reorder level</th>
+                    <th>Adjust</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var product in Model)
+                {
+                    var isLow = product.StockQuantity <= product.ReorderLevel;
+                    <tr>
+                        <td class="text-silver fw-600">@product.Name</td>
+                        <td class="fs-14 text-muted-silver">@(product.Type ?? "-")</td>
+                        <td class="fs-14">@(product.Supplier?.Name ?? "-")</td>
+                        <td class="num text-silver">@product.Price.ToString("N2")</td>
+                        <td class="num text-muted-silver">@product.ReplacementCharge.ToString("N2")</td>
+                        <td class="num">
+                            @if (isLow)
+                            {
+                                <span class="badge-status badge-warning">@product.StockQuantity</span>
+                            }
+                            else
+                            {
+                                <span class="text-silver">@product.StockQuantity</span>
+                            }
+                        </td>
+                        <td class="num text-muted-silver">@product.ReorderLevel</td>
+                        <td>
+                            @* The name of the button carries the change, only the pressed button is sent. *@
+                            <form method="post" asp-area="Admin" asp-controller="Products" asp-action="AdjustStock" asp-route-id="@product.Id"
+                                  class="d-flex gap-1">
+                                <input type="hidden" name="reason" value="Manual adjustment in the store room." />
+                                <button class="btn btn-ghost btn-sm" type="submit" name="delta" value="1" title="One unit into the stock">+1</button>
+                                <button class="btn btn-ghost btn-sm" type="submit" name="delta" value="-1" title="One unit out of the stock">-1</button>
+                            </form>
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-ghost btn-sm" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@product.Id">Edit</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
